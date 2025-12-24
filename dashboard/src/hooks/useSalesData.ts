@@ -11,9 +11,6 @@ const DEMO_ORDERS: SaleOrder[] = [
   { id: 5, idSaleOrder: 'SO-005', number: 1005, total: 12300, orderDate: '2025-12-24T15:30:00', shopNumber: '10019', shopName: 'Daniel Ortiz', paymentmethod: 'Efectivo' },
   { id: 6, idSaleOrder: 'SO-006', number: 0, total: 28700, orderDate: '2025-12-24T16:00:00', shopNumber: '30036', shopName: 'Daniel Lacroze', paymentmethod: 'Mercado Pago' },
   { id: 7, idSaleOrder: 'SO-007', number: 1007, total: 45200, orderDate: '2025-12-24T10:00:00', shopNumber: '30038', shopName: 'Daniel Corrientes', paymentmethod: 'Tarjeta' },
-  { id: 8, idSaleOrder: 'SO-008', number: 1008, total: 19800, orderDate: '2025-12-24T17:30:00', shopNumber: '66220', shopName: 'Subway Corrientes', paymentmethod: 'Efectivo' },
-  { id: 9, idSaleOrder: 'SO-009', number: 0, total: 21500, orderDate: '2025-12-24T18:15:00', shopNumber: '63953', shopName: 'Subway Lacroze', paymentmethod: 'Tarjeta' },
-  { id: 10, idSaleOrder: 'SO-010', number: 1010, total: 16700, orderDate: '2025-12-24T19:00:00', shopNumber: '10019', shopName: 'Daniel Ortiz', paymentmethod: 'Mercado Pago' },
 ]
 
 const DEMO_PRODUCTS: SaleProduct[] = [
@@ -35,6 +32,34 @@ interface SalesDataState {
   isDemo: boolean
 }
 
+// Helper para parsear fechas en diferentes formatos
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr) return null
+  
+  // Intentar varios formatos
+  // ISO: 2025-12-24T12:30:00
+  // dd/mm/yyyy: 24/12/2025
+  
+  // Primero intentar como ISO
+  let date = new Date(dateStr)
+  if (!isNaN(date.getTime())) return date
+  
+  // Intentar dd/mm/yyyy
+  const parts = dateStr.split('/')
+  if (parts.length === 3) {
+    const [day, month, year] = parts
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    if (!isNaN(date.getTime())) return date
+  }
+  
+  return null
+}
+
+// Helper para comparar solo la parte de fecha (sin hora)
+function getDateOnly(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
 export function useSalesData(fromDate?: string, toDate?: string) {
   const [state, setState] = useState<SalesDataState>({
     orders: [],
@@ -48,12 +73,9 @@ export function useSalesData(fromDate?: string, toDate?: string) {
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
-      // Check if Supabase is configured
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      console.log('Supabase URL:', supabaseUrl)
       
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
-        console.log('Using demo data - Supabase not configured')
         setState({
           orders: DEMO_ORDERS,
           products: DEMO_PRODUCTS,
@@ -65,44 +87,62 @@ export function useSalesData(fromDate?: string, toDate?: string) {
       }
 
       // Fetch ALL orders
-      console.log('Fetching orders from Supabase...')
-      const { data: orders, error: ordersError } = await supabase
+      const { data: allOrders, error: ordersError } = await supabase
         .from('sale_orders')
         .select('*')
         .order('orderDate', { ascending: false })
 
-      console.log('Orders result:', { count: orders?.length, error: ordersError })
+      if (ordersError) throw ordersError
 
-      if (ordersError) {
-        console.error('Orders error:', ordersError)
-        throw ordersError
-      }
-
-      // Fetch products (sin límite para obtener todos)
-      console.log('Fetching products from Supabase...')
-      const { data: products, error: productsError } = await supabase
+      // Fetch ALL products
+      const { data: allProducts, error: productsError } = await supabase
         .from('sale_products')
         .select('*')
 
-      console.log('Products result:', { count: products?.length, error: productsError })
+      if (productsError) throw productsError
 
-      if (productsError) {
-        console.error('Products error:', productsError)
-        throw productsError
+      // Filtrar por fecha en el cliente
+      let filteredOrders = allOrders || []
+      
+      if (fromDate || toDate) {
+        const fromDateObj = fromDate ? new Date(fromDate) : null
+        const toDateObj = toDate ? new Date(toDate) : null
+        
+        // Ajustar toDate al final del día
+        if (toDateObj) {
+          toDateObj.setHours(23, 59, 59, 999)
+        }
+        
+        filteredOrders = filteredOrders.filter(order => {
+          const orderDateObj = parseDate(order.orderDate)
+          if (!orderDateObj) return true // Si no puede parsear, incluir
+          
+          if (fromDateObj && orderDateObj < fromDateObj) return false
+          if (toDateObj && orderDateObj > toDateObj) return false
+          
+          return true
+        })
       }
 
-      console.log('Data loaded successfully:', { orders: orders?.length, products: products?.length })
+      // Obtener IDs de órdenes filtradas para filtrar productos
+      const orderIds = new Set(filteredOrders.map(o => o.idSaleOrder))
+      
+      // Filtrar productos que pertenecen a las órdenes filtradas
+      const filteredProducts = (allProducts || []).filter(p => 
+        orderIds.has(p.idSaleOrder)
+      )
+
+      console.log(`Datos cargados: ${filteredOrders.length} órdenes, ${filteredProducts.length} productos`)
 
       setState({
-        orders: orders || [],
-        products: products || [],
+        orders: filteredOrders,
+        products: filteredProducts,
         loading: false,
         error: null,
         isDemo: false
       })
     } catch (err) {
       console.error('Error fetching data:', err)
-      // Fallback to demo data on error
       setState({
         orders: DEMO_ORDERS,
         products: DEMO_PRODUCTS,
@@ -119,4 +159,3 @@ export function useSalesData(fromDate?: string, toDate?: string) {
 
   return { ...state, refetch: fetchData }
 }
-
