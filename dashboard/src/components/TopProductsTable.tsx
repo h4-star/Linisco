@@ -55,39 +55,39 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
 
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '12px' }}>
         <span className="card-title">
           <ShoppingBag size={20} />
           Top 10 Productos
         </span>
-      </div>
-
-      {/* Filtros */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '8px', 
-        marginBottom: '16px',
-        flexWrap: 'wrap'
-      }}>
-        {filters.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '20px',
-              border: filter === f.key ? `2px solid ${f.color}` : '1px solid var(--border-color)',
-              background: filter === f.key ? `${f.color}20` : 'transparent',
-              color: filter === f.key ? f.color : 'var(--text-muted)',
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-              fontWeight: filter === f.key ? 600 : 400,
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
+        
+        {/* Filtros por tipo de local */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          flexWrap: 'wrap',
+          width: '100%'
+        }}>
+          {filters.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: filter === f.key ? `2px solid ${f.color}` : '1px solid var(--border-color)',
+                background: filter === f.key ? `${f.color}22` : 'var(--bg-secondary)',
+                color: filter === f.key ? f.color : 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: filter === f.key ? 600 : 400,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
       
       <div className="table-container">
