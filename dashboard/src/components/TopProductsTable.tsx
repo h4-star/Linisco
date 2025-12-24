@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ShoppingBag } from 'lucide-react'
 import type { SaleProduct } from '../types/database'
 
@@ -14,14 +15,28 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
+type FilterType = 'todos' | 'subway' | 'daniel' | 'seitu'
+
 export function TopProductsTable({ products }: TopProductsTableProps) {
+  const [filter, setFilter] = useState<FilterType>('todos')
+
+  // Filtrar productos según la selección
+  const filteredProducts = products.filter(product => {
+    if (filter === 'todos') return true
+    if (filter === 'subway') return product.shopName?.toLowerCase().includes('subway')
+    if (filter === 'daniel') return product.shopName?.toLowerCase().includes('daniel')
+    if (filter === 'seitu') return product.shopName?.toLowerCase().includes('seitu')
+    return true
+  })
+
   // Aggregate products by name
-  const productTotals = products.reduce((acc, product) => {
-    if (!acc[product.name]) {
-      acc[product.name] = { quantity: 0, total: 0 }
+  const productTotals = filteredProducts.reduce((acc, product) => {
+    const name = product.name || 'Sin nombre'
+    if (!acc[name]) {
+      acc[name] = { quantity: 0, total: 0 }
     }
-    acc[product.name].quantity += product.quantity
-    acc[product.name].total += product.total
+    acc[name].quantity += Number(product.quantity) || 0
+    acc[name].total += Number(product.total) || 0
     return acc
   }, {} as Record<string, { quantity: number; total: number }>)
 
@@ -31,6 +46,13 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
     .sort((a, b) => b.total - a.total)
     .slice(0, 10)
 
+  const filters: { key: FilterType; label: string; color: string }[] = [
+    { key: 'todos', label: 'Todos', color: 'var(--text-primary)' },
+    { key: 'subway', label: 'Subway', color: '#00a651' },
+    { key: 'daniel', label: 'Daniel', color: '#ff6b35' },
+    { key: 'seitu', label: 'Seitu', color: '#8b5cf6' },
+  ]
+
   return (
     <div className="card">
       <div className="card-header">
@@ -38,6 +60,34 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
           <ShoppingBag size={20} />
           Top 10 Productos
         </span>
+      </div>
+
+      {/* Filtros */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginBottom: '16px',
+        flexWrap: 'wrap'
+      }}>
+        {filters.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '20px',
+              border: filter === f.key ? `2px solid ${f.color}` : '1px solid var(--border-color)',
+              background: filter === f.key ? `${f.color}20` : 'transparent',
+              color: filter === f.key ? f.color : 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: filter === f.key ? 600 : 400,
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
       
       <div className="table-container">
@@ -51,33 +101,41 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
             </tr>
           </thead>
           <tbody>
-            {sortedProducts.map((product, index) => (
-              <tr key={product.name}>
-                <td style={{ 
-                  fontFamily: 'var(--font-mono)', 
-                  color: 'var(--text-muted)',
-                  width: '40px'
-                }}>
-                  {(index + 1).toString().padStart(2, '0')}
-                </td>
-                <td>{product.name}</td>
-                <td style={{ 
-                  textAlign: 'right', 
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent-secondary)'
-                }}>
-                  {product.quantity}
-                </td>
-                <td style={{ 
-                  textAlign: 'right', 
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--accent-primary)',
-                  fontWeight: 500
-                }}>
-                  {formatCurrency(product.total)}
+            {sortedProducts.length === 0 ? (
+              <tr>
+                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                  No hay productos para este filtro
                 </td>
               </tr>
-            ))}
+            ) : (
+              sortedProducts.map((product, index) => (
+                <tr key={product.name}>
+                  <td style={{ 
+                    fontFamily: 'var(--font-mono)', 
+                    color: 'var(--text-muted)',
+                    width: '40px'
+                  }}>
+                    {(index + 1).toString().padStart(2, '0')}
+                  </td>
+                  <td>{product.name}</td>
+                  <td style={{ 
+                    textAlign: 'right', 
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--accent-secondary)'
+                  }}>
+                    {product.quantity}
+                  </td>
+                  <td style={{ 
+                    textAlign: 'right', 
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--accent-primary)',
+                    fontWeight: 500
+                  }}>
+                    {formatCurrency(product.total)}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
