@@ -19,6 +19,9 @@ type FilterType = 'todos' | 'subway' | 'daniel' | 'seitu'
 
 export function TopProductsTable({ products }: TopProductsTableProps) {
   const [filter, setFilter] = useState<FilterType>('todos')
+  
+  // Debug: mostrar cantidad de productos recibidos
+  console.log('TopProductsTable - productos recibidos:', products.length)
 
   // Filtrar productos según la selección
   const filteredProducts = products.filter(product => {

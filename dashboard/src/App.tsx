@@ -29,6 +29,10 @@ function App() {
   
   const { orders, products, loading, isDemo, refetch } = useSalesData(fromDate, toDate)
 
+  // Debug
+  console.log('App - fromDate:', fromDate, 'toDate:', toDate)
+  console.log('App - orders:', orders.length, 'products:', products.length, 'isDemo:', isDemo)
+
   // Calculate stats
   const totalSales = orders.reduce((sum, o) => sum + o.total, 0)
   const totalSalesNoIVA = totalSales / 1.21
