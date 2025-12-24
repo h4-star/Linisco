@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+dashboard/node_modules/
+
+# Build output
+dashboard/dist/
+
+# Environment files (NUNCA subir!)
+.env
+.env.local
+.env.*.local
+scripts/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Jupyter
+.ipynb_checkpoints/
+

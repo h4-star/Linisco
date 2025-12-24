@@ -1,0 +1,54 @@
+{
+  "shops": [
+    {
+      "key": "SC",
+      "code": "66220",
+      "name": "Subway Corrientes",
+      "email": "66220@linisco.com.ar"
+    },
+    {
+      "key": "SL",
+      "code": "63953",
+      "name": "Subway Lacroze",
+      "email": "63953@linisco.com.ar"
+    },
+    {
+      "key": "SO",
+      "code": "72267",
+      "name": "Subway Ortiz",
+      "email": "72267@linisco.com.ar"
+    },
+    {
+      "key": "DO",
+      "code": "10019",
+      "name": "Daniel Ortiz",
+      "email": "10019@linisco.com.ar"
+    },
+    {
+      "key": "DL",
+      "code": "30036",
+      "name": "Daniel Lacroze",
+      "email": "30036@linisco.com.ar"
+    },
+    {
+      "key": "DC",
+      "code": "30038",
+      "name": "Daniel Corrientes",
+      "email": "30038@linisco.com.ar"
+    },
+    {
+      "key": "SE",
+      "code": "10020",
+      "name": "Seitu Juramento",
+      "email": "10020@linisco.com.ar"
+    },
+    {
+      "key": "SJ",
+      "code": "75248",
+      "name": "Subway Juramento",
+      "email": "75248@linisco.com.ar"
+    }
+  ],
+  "_comentario": "Para agregar un nuevo local, copiá un bloque y modificá los valores. Luego agregá la credencial en el .env como LINISCO_XX"
+}
+
