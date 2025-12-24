@@ -33,12 +33,8 @@ interface SalesDataState {
 }
 
 // Helper para parsear fechas en diferentes formatos
-function parseDate(dateStr: string): Date | null {
+function parseDate(dateStr: string | undefined | null): Date | null {
   if (!dateStr) return null
-  
-  // Intentar varios formatos
-  // ISO: 2025-12-24T12:30:00
-  // dd/mm/yyyy: 24/12/2025
   
   // Primero intentar como ISO
   let date = new Date(dateStr)
@@ -53,11 +49,6 @@ function parseDate(dateStr: string): Date | null {
   }
   
   return null
-}
-
-// Helper para comparar solo la parte de fecha (sin hora)
-function getDateOnly(date: Date): string {
-  return date.toISOString().split('T')[0]
 }
 
 export function useSalesData(fromDate?: string, toDate?: string) {
@@ -101,8 +92,12 @@ export function useSalesData(fromDate?: string, toDate?: string) {
 
       if (productsError) throw productsError
 
+      // Castear los datos
+      const ordersData = (allOrders || []) as SaleOrder[]
+      const productsData = (allProducts || []) as SaleProduct[]
+
       // Filtrar por fecha en el cliente
-      let filteredOrders = allOrders || []
+      let filteredOrders = ordersData
       
       if (fromDate || toDate) {
         const fromDateObj = fromDate ? new Date(fromDate) : null
@@ -111,6 +106,11 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         // Ajustar toDate al final del día
         if (toDateObj) {
           toDateObj.setHours(23, 59, 59, 999)
+        }
+        
+        // Ajustar fromDate al inicio del día
+        if (fromDateObj) {
+          fromDateObj.setHours(0, 0, 0, 0)
         }
         
         filteredOrders = filteredOrders.filter(order => {
@@ -128,7 +128,7 @@ export function useSalesData(fromDate?: string, toDate?: string) {
       const orderIds = new Set(filteredOrders.map(o => o.idSaleOrder))
       
       // Filtrar productos que pertenecen a las órdenes filtradas
-      const filteredProducts = (allProducts || []).filter(p => 
+      const filteredProducts = productsData.filter(p => 
         orderIds.has(p.idSaleOrder)
       )
 
