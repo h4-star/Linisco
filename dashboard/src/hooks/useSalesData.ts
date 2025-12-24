@@ -64,13 +64,12 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         return
       }
 
-      // Fetch ALL orders (sin filtro de fecha por ahora)
+      // Fetch ALL orders
       console.log('Fetching orders from Supabase...')
       const { data: orders, error: ordersError } = await supabase
         .from('sale_orders')
         .select('*')
         .order('orderDate', { ascending: false })
-        .limit(1000)
 
       console.log('Orders result:', { count: orders?.length, error: ordersError })
 
@@ -79,12 +78,11 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         throw ordersError
       }
 
-      // Fetch products
+      // Fetch products (sin límite para obtener todos)
       console.log('Fetching products from Supabase...')
       const { data: products, error: productsError } = await supabase
         .from('sale_products')
         .select('*')
-        .limit(5000)
 
       console.log('Products result:', { count: products?.length, error: productsError })
 
