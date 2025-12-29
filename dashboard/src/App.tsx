@@ -8,7 +8,7 @@ import { SalesByHourChart } from './components/SalesByHourChart'
 import { PaymentMethodsChart } from './components/PaymentMethodsChart'
 import { BlackSalesCard } from './components/BlackSalesCard'
 import { TopProductsTable } from './components/TopProductsTable'
-import { MigrationPanel } from './components/MigrationPanel'
+import { SyncStatus } from './components/SyncStatus'
 import { LoginPage } from './components/LoginPage'
 import { useSalesData } from './hooks/useSalesData'
 import { useAuth } from './hooks/useAuth'
@@ -127,8 +127,8 @@ function App() {
         </div>
       </main>
 
-      {/* Panel de migración flotante */}
-      <MigrationPanel />
+      {/* Panel de estado de sincronización */}
+      <SyncStatus />
     </>
   )
 }

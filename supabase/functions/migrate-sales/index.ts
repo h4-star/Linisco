@@ -58,11 +58,12 @@ function formatDateDDMMYYYY(date: Date): string {
 
 function getAutoDateRange(): { fromDate: string; toDate: string } {
   const now = new Date()
-  // Para el cron de 15 min, buscamos la última hora para asegurar que no perdemos nada
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+  // Buscar las últimas 24 horas para asegurar que no perdemos datos
+  // aunque el cron falle algunas veces
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   
   return {
-    fromDate: formatDateDDMMYYYY(oneHourAgo),
+    fromDate: formatDateDDMMYYYY(oneDayAgo),
     toDate: formatDateDDMMYYYY(now)
   }
 }
@@ -262,28 +263,30 @@ async function migrateShop(
     }
   }
 
-  // ---- SESIONES (solo en modo manual o si es la primera vez del día) ----
-  if (!isAutoMode) {
-    const sessions = await fetchData('psessions', email, token, params)
-    
-    if (sessions.length > 0) {
-      const sessionsFiltered = sessions.map(session => {
-        const filtered = filterColumns(session, ALLOWED_SESSION_COLUMNS)
-        filtered.shopName = shop.name
-        return filtered
-      })
+  // ---- SESIONES (en todos los modos) ----
+  const sessions = await fetchData('psessions', email, token, params)
+  
+  if (sessions.length > 0) {
+    const sessionsFiltered = sessions.map(session => {
+      const filtered = filterColumns(session, ALLOWED_SESSION_COLUMNS)
+      filtered.shopName = shop.name
+      return filtered
+    })
 
-      try {
-        const { error } = await supabase
-          .from('psessions')
-          .insert(sessionsFiltered)
-        
-        if (!error) {
-          result.sessions = sessions.length
-        }
-      } catch (e) {
-        console.error('❌ Sessions exception:', e)
+    try {
+      // Usar upsert para evitar duplicados
+      const { error } = await supabase
+        .from('psessions')
+        .upsert(sessionsFiltered, {
+          onConflict: 'idSession',
+          ignoreDuplicates: true
+        })
+      
+      if (!error) {
+        result.sessions = sessions.length
       }
+    } catch (e) {
+      console.error('❌ Sessions exception:', e)
     }
   }
 
