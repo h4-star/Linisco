@@ -9,7 +9,9 @@ import { PaymentMethodsChart } from './components/PaymentMethodsChart'
 import { BlackSalesCard } from './components/BlackSalesCard'
 import { TopProductsTable } from './components/TopProductsTable'
 import { MigrationPanel } from './components/MigrationPanel'
+import { LoginPage } from './components/LoginPage'
 import { useSalesData } from './hooks/useSalesData'
+import { useAuth } from './hooks/useAuth'
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-AR', {
@@ -21,6 +23,8 @@ const formatCurrency = (value: number) => {
 }
 
 function App() {
+  const { user, loading: authLoading, error: authError, isAuthenticated, signIn, signOut } = useAuth()
+  
   const today = format(new Date(), 'yyyy-MM-dd')
   const weekAgo = format(subDays(new Date(), 7), 'yyyy-MM-dd')
   
@@ -29,9 +33,26 @@ function App() {
   
   const { orders, products, loading, isDemo, refetch } = useSalesData(fromDate, toDate)
 
-  // Debug
-  console.log('App - fromDate:', fromDate, 'toDate:', toDate)
-  console.log('App - orders:', orders.length, 'products:', products.length, 'isDemo:', isDemo)
+  // Pantalla de carga inicial de auth
+  if (authLoading) {
+    return (
+      <div className="loading">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">Verificando sesión...</div>
+      </div>
+    )
+  }
+
+  // Si no está autenticado, mostrar login
+  if (!isAuthenticated) {
+    return (
+      <LoginPage 
+        onLogin={signIn}
+        error={authError}
+        loading={authLoading}
+      />
+    )
+  }
 
   // Calculate stats
   const totalSales = orders.reduce((sum, o) => sum + o.total, 0)
@@ -59,6 +80,8 @@ function App() {
         onRefresh={refetch}
         loading={loading}
         isDemo={isDemo}
+        user={user}
+        onSignOut={signOut}
       />
 
       <main className="container" style={{ paddingBottom: '48px' }}>
@@ -111,4 +134,3 @@ function App() {
 }
 
 export default App
-

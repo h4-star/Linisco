@@ -1,4 +1,5 @@
-import { Store, RefreshCw, AlertCircle } from 'lucide-react'
+import { Store, RefreshCw, AlertCircle, LogOut, User } from 'lucide-react'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface HeaderProps {
   fromDate: string
@@ -8,6 +9,8 @@ interface HeaderProps {
   onRefresh: () => void
   loading: boolean
   isDemo: boolean
+  user?: SupabaseUser | null
+  onSignOut?: () => void
 }
 
 export function Header({ 
@@ -17,7 +20,9 @@ export function Header({
   onToDateChange, 
   onRefresh, 
   loading,
-  isDemo 
+  isDemo,
+  user,
+  onSignOut
 }: HeaderProps) {
   return (
     <header className="header">
@@ -67,9 +72,25 @@ export function Header({
             <RefreshCw size={16} className={loading ? 'spinning' : ''} />
             Actualizar
           </button>
+
+          {/* User menu */}
+          {user && (
+            <div className="user-menu">
+              <div className="user-info">
+                <User size={16} />
+                <span className="user-email">{user.email}</span>
+              </div>
+              <button 
+                className="btn btn-secondary logout-btn" 
+                onClick={onSignOut}
+                title="Cerrar sesión"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
   )
 }
-
