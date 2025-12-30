@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
 import { DollarSign, Receipt, TrendingUp, Users } from 'lucide-react'
 import { Header } from './components/Header'
 import { StatCard } from './components/StatCard'
@@ -26,9 +26,9 @@ function App() {
   const { user, loading: authLoading, error: authError, isAuthenticated, signIn, signOut } = useAuth()
   
   const today = format(new Date(), 'yyyy-MM-dd')
-  const weekAgo = format(subDays(new Date(), 7), 'yyyy-MM-dd')
   
-  const [fromDate, setFromDate] = useState(weekAgo)
+  // Por defecto mostrar solo el día de hoy
+  const [fromDate, setFromDate] = useState(today)
   const [toDate, setToDate] = useState(today)
   
   const { orders, products, loading, isDemo, refetch } = useSalesData(fromDate, toDate)
