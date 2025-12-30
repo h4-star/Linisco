@@ -331,12 +331,22 @@ serve(async (req: Request) => {
     
     try {
       const text = await req.text()
+      console.log(`📥 Raw body: ${text}`)
       if (text && text.trim()) {
         body = JSON.parse(text)
+        console.log(`📦 Parsed body: ${JSON.stringify(body)}`)
       }
-    } catch {}
+    } catch (parseError) {
+      console.log(`⚠️ Body parse error, using auto mode: ${parseError}`)
+    }
 
-    const isAutoMode = body.mode === 'auto' || (!body.fromDate && !body.toDate)
+    // SIEMPRE usar modo auto si no hay fechas válidas
+    const hasValidDates = body.fromDate && body.toDate && 
+                          typeof body.fromDate === 'string' && 
+                          typeof body.toDate === 'string'
+    const isAutoMode = body.mode === 'auto' || !hasValidDates
+    
+    console.log(`🔍 Mode check: mode=${body.mode}, hasValidDates=${hasValidDates}, isAutoMode=${isAutoMode}`)
     
     // Determinar rango de fechas
     let fromDate: string
@@ -346,19 +356,11 @@ serve(async (req: Request) => {
       const autoRange = getAutoDateRange()
       fromDate = autoRange.fromDate
       toDate = autoRange.toDate
-      console.log(`🤖 AUTO MODE: Syncing last hour (${fromDate} - ${toDate})`)
+      console.log(`🤖 AUTO MODE: Syncing last 24h (${fromDate} - ${toDate})`)
     } else {
-      if (!body.fromDate || !body.toDate) {
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'fromDate y toDate son requeridos (formato dd/mm/yyyy)' 
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      fromDate = body.fromDate
-      toDate = body.toDate
+      fromDate = body.fromDate!
+      toDate = body.toDate!
+      console.log(`📝 MANUAL MODE: ${fromDate} - ${toDate}`)
     }
 
     // Registrar inicio de migración
