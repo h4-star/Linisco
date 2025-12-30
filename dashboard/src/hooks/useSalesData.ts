@@ -32,7 +32,30 @@ interface SalesDataState {
   isDemo: boolean
 }
 
-// Helper para parsear fechas en diferentes formatos
+// Helper para extraer SOLO la parte de la fecha (YYYY-MM-DD) de un string de fecha
+// Esto evita problemas de zona horaria ya que comparamos solo strings de fecha
+function extractDateOnly(dateStr: string | undefined | null): string | null {
+  if (!dateStr) return null
+  
+  // Si es formato ISO (2025-12-30T23:30:00 o 2025-12-30T23:30:00Z)
+  // Extraer solo YYYY-MM-DD directamente del string
+  const isoMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (isoMatch) {
+    return isoMatch[1] // Retorna "2025-12-30"
+  }
+  
+  // Si es formato dd/mm/yyyy HH:mm:ss o dd/mm/yyyy
+  const dmyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (dmyMatch) {
+    const [, day, month, year] = dmyMatch
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  
+  console.log(`⚠️ Could not extract date from: ${dateStr}`)
+  return null
+}
+
+// Helper para parsear fechas en diferentes formatos (mantener para otros usos)
 function parseDate(dateStr: string | undefined | null): Date | null {
   if (!dateStr) return null
   
@@ -116,26 +139,20 @@ export function useSalesData(fromDate?: string, toDate?: string) {
       let filteredOrders = ordersData
       
       if (fromDate || toDate) {
-        // Convertir fechas del filtro (formato yyyy-mm-dd del input date)
-        const fromDateObj = fromDate ? new Date(fromDate + 'T00:00:00') : null
-        const toDateObj = toDate ? new Date(toDate + 'T23:59:59') : null
-        
-        console.log(`🔍 Filtro: desde ${fromDate} (${fromDateObj}) hasta ${toDate} (${toDateObj})`)
+        console.log(`🔍 Filtro: desde ${fromDate} hasta ${toDate}`)
         
         filteredOrders = filteredOrders.filter(order => {
-          const orderDateObj = parseDate(order.orderDate)
-          if (!orderDateObj) {
-            console.log(`⚠️ No se pudo parsear: ${order.orderDate}`)
+          // Extraer solo la parte YYYY-MM-DD del orderDate (sin convertir a Date)
+          // Esto evita problemas de zona horaria porque comparamos strings directamente
+          const orderDateStr = extractDateOnly(order.orderDate)
+          if (!orderDateStr) {
+            console.log(`⚠️ No se pudo extraer fecha de: ${order.orderDate}`)
             return true // Si no puede parsear, incluir
           }
           
-          // Solo comparar fechas (sin hora)
-          const orderDateOnly = new Date(orderDateObj.getFullYear(), orderDateObj.getMonth(), orderDateObj.getDate())
-          const fromDateOnly = fromDateObj ? new Date(fromDateObj.getFullYear(), fromDateObj.getMonth(), fromDateObj.getDate()) : null
-          const toDateOnly = toDateObj ? new Date(toDateObj.getFullYear(), toDateObj.getMonth(), toDateObj.getDate()) : null
-          
-          if (fromDateOnly && orderDateOnly < fromDateOnly) return false
-          if (toDateOnly && orderDateOnly > toDateOnly) return false
+          // Comparar strings de fecha directamente (formato YYYY-MM-DD ordena correctamente)
+          if (fromDate && orderDateStr < fromDate) return false
+          if (toDate && orderDateStr > toDate) return false
           
           return true
         })
