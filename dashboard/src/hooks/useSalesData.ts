@@ -40,14 +40,25 @@ function parseDate(dateStr: string | undefined | null): Date | null {
   let date = new Date(dateStr)
   if (!isNaN(date.getTime())) return date
   
-  // Intentar dd/mm/yyyy
-  const parts = dateStr.split('/')
+  // Intentar dd/mm/yyyy HH:mm:ss o dd/mm/yyyy
+  const dateTimeParts = dateStr.split(' ')
+  const datePart = dateTimeParts[0]
+  const parts = datePart.split('/')
   if (parts.length === 3) {
     const [day, month, year] = parts
     date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
     if (!isNaN(date.getTime())) return date
   }
   
+  // Intentar yyyy-mm-dd
+  const isoParts = datePart.split('-')
+  if (isoParts.length === 3 && isoParts[0].length === 4) {
+    const [year, month, day] = isoParts
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    if (!isNaN(date.getTime())) return date
+  }
+  
+  console.log(`⚠️ Could not parse date: ${dateStr}`)
   return null
 }
 
@@ -96,32 +107,40 @@ export function useSalesData(fromDate?: string, toDate?: string) {
       const ordersData = (allOrders || []) as SaleOrder[]
       const productsData = (allProducts || []) as SaleProduct[]
 
+      console.log(`📊 Datos de Supabase: ${ordersData.length} órdenes, ${productsData.length} productos`)
+      if (ordersData.length > 0) {
+        console.log(`📅 Primera orden - orderDate: ${ordersData[0].orderDate}`)
+      }
+
       // Filtrar por fecha en el cliente
       let filteredOrders = ordersData
       
       if (fromDate || toDate) {
-        const fromDateObj = fromDate ? new Date(fromDate) : null
-        const toDateObj = toDate ? new Date(toDate) : null
+        // Convertir fechas del filtro (formato yyyy-mm-dd del input date)
+        const fromDateObj = fromDate ? new Date(fromDate + 'T00:00:00') : null
+        const toDateObj = toDate ? new Date(toDate + 'T23:59:59') : null
         
-        // Ajustar toDate al final del día
-        if (toDateObj) {
-          toDateObj.setHours(23, 59, 59, 999)
-        }
-        
-        // Ajustar fromDate al inicio del día
-        if (fromDateObj) {
-          fromDateObj.setHours(0, 0, 0, 0)
-        }
+        console.log(`🔍 Filtro: desde ${fromDate} (${fromDateObj}) hasta ${toDate} (${toDateObj})`)
         
         filteredOrders = filteredOrders.filter(order => {
           const orderDateObj = parseDate(order.orderDate)
-          if (!orderDateObj) return true // Si no puede parsear, incluir
+          if (!orderDateObj) {
+            console.log(`⚠️ No se pudo parsear: ${order.orderDate}`)
+            return true // Si no puede parsear, incluir
+          }
           
-          if (fromDateObj && orderDateObj < fromDateObj) return false
-          if (toDateObj && orderDateObj > toDateObj) return false
+          // Solo comparar fechas (sin hora)
+          const orderDateOnly = new Date(orderDateObj.getFullYear(), orderDateObj.getMonth(), orderDateObj.getDate())
+          const fromDateOnly = fromDateObj ? new Date(fromDateObj.getFullYear(), fromDateObj.getMonth(), fromDateObj.getDate()) : null
+          const toDateOnly = toDateObj ? new Date(toDateObj.getFullYear(), toDateObj.getMonth(), toDateObj.getDate()) : null
+          
+          if (fromDateOnly && orderDateOnly < fromDateOnly) return false
+          if (toDateOnly && orderDateOnly > toDateOnly) return false
           
           return true
         })
+        
+        console.log(`📋 Después del filtro: ${filteredOrders.length} órdenes`)
       }
 
       // Obtener IDs de órdenes filtradas para filtrar productos

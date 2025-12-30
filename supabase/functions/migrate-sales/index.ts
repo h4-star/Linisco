@@ -56,6 +56,32 @@ function formatDateDDMMYYYY(date: Date): string {
   return `${day}/${month}/${year}`
 }
 
+// Convertir fecha UTC a hora Argentina (UTC-3)
+function convertToArgentinaTime(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  
+  try {
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return dateStr // Si no es parseable, devolver original
+    
+    // Restar 3 horas para convertir de UTC a Argentina (o sumar si el servidor ya está en UTC)
+    // Argentina es UTC-3, pero como el POS puede enviar en UTC, ajustamos
+    const argentinaDate = new Date(date.getTime() - (3 * 60 * 60 * 1000))
+    
+    // Formatear como ISO sin la Z (hora local Argentina)
+    const year = argentinaDate.getUTCFullYear()
+    const month = (argentinaDate.getUTCMonth() + 1).toString().padStart(2, '0')
+    const day = argentinaDate.getUTCDate().toString().padStart(2, '0')
+    const hours = argentinaDate.getUTCHours().toString().padStart(2, '0')
+    const minutes = argentinaDate.getUTCMinutes().toString().padStart(2, '0')
+    const seconds = argentinaDate.getUTCSeconds().toString().padStart(2, '0')
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+  } catch {
+    return dateStr
+  }
+}
+
 function getAutoDateRange(): { fromDate: string; toDate: string } {
   const now = new Date()
   // Buscar las últimas 24 horas para asegurar que no perdemos datos
@@ -200,6 +226,10 @@ async function migrateShop(
       const filtered = filterColumns(order, ALLOWED_ORDER_COLUMNS)
       filtered.shopNumber = shop.code
       filtered.shopName = shop.name
+      // Convertir fecha a hora Argentina
+      if (filtered.orderDate) {
+        filtered.orderDate = convertToArgentinaTime(filtered.orderDate)
+      }
       return filtered
     })
 
@@ -270,6 +300,10 @@ async function migrateShop(
     const sessionsFiltered = sessions.map(session => {
       const filtered = filterColumns(session, ALLOWED_SESSION_COLUMNS)
       filtered.shopName = shop.name
+      // Convertir fechas a hora Argentina
+      if (filtered.date) filtered.date = convertToArgentinaTime(filtered.date)
+      if (filtered.openingDate) filtered.openingDate = convertToArgentinaTime(filtered.openingDate)
+      if (filtered.closingDate) filtered.closingDate = convertToArgentinaTime(filtered.closingDate)
       return filtered
     })
 
