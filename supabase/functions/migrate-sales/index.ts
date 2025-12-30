@@ -251,7 +251,7 @@ async function migrateShop(
       })
 
       try {
-        // Para productos, verificar si ya existen por idSaleOrder + idProduct
+        // Intentar upsert con constraint unique_sale_product
         const { error } = await supabase
           .from('sale_products')
           .upsert(productsFiltered, {
@@ -260,16 +260,24 @@ async function migrateShop(
           })
         
         if (error) {
-          // Si falla el upsert, intentar insert ignorando duplicados
-          const { error: insertError } = await supabase
-            .from('sale_products')
-            .insert(productsFiltered)
+          console.log(`⚠️ Upsert products failed: ${error.message}, trying insert...`)
           
-          if (!insertError) {
-            result.products = products.length
+          // Si falla el upsert (constraint no existe), insertar uno por uno ignorando errores
+          let insertedCount = 0
+          for (const product of productsFiltered) {
+            const { error: insertError } = await supabase
+              .from('sale_products')
+              .insert(product)
+            
+            if (!insertError) {
+              insertedCount++
+            }
           }
+          result.products = insertedCount
+          console.log(`✅ ${shop.name}: ${insertedCount}/${products.length} products inserted`)
         } else {
           result.products = products.length
+          console.log(`✅ ${shop.name}: ${products.length} products upserted`)
         }
       } catch (e) {
         console.error('❌ Products exception:', e)

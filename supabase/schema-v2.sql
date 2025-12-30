@@ -77,6 +77,9 @@ CREATE INDEX idx_sale_products_order ON sale_products("idSaleOrder");
 CREATE INDEX idx_sale_products_shop ON sale_products("shopName");
 CREATE INDEX idx_sale_products_name ON sale_products(name);
 
+-- Constraint UNIQUE para evitar duplicados y permitir upsert
+ALTER TABLE sale_products ADD CONSTRAINT unique_sale_product UNIQUE ("idSaleOrder", "idProduct");
+
 -- =============================================
 -- TABLA: psessions (Sesiones de caja)
 -- =============================================
@@ -112,6 +115,9 @@ CREATE TABLE psessions (
 
 CREATE INDEX idx_psessions_shop ON psessions("shopName");
 CREATE INDEX idx_psessions_date ON psessions(date);
+
+-- Constraint UNIQUE para evitar duplicados y permitir upsert
+ALTER TABLE psessions ADD CONSTRAINT unique_session UNIQUE ("idSession");
 
 -- =============================================
 -- ROW LEVEL SECURITY (RLS) - Permitir todo
