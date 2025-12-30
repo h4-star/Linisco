@@ -56,30 +56,14 @@ function formatDateDDMMYYYY(date: Date): string {
   return `${day}/${month}/${year}`
 }
 
-// Convertir fecha UTC a hora Argentina (UTC-3)
+// El POS envía fechas en hora local Argentina - NO hacer conversión de zona horaria
+// Solo normalizamos el formato para asegurar consistencia
 function convertToArgentinaTime(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null
   
-  try {
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return dateStr // Si no es parseable, devolver original
-    
-    // Restar 3 horas para convertir de UTC a Argentina (o sumar si el servidor ya está en UTC)
-    // Argentina es UTC-3, pero como el POS puede enviar en UTC, ajustamos
-    const argentinaDate = new Date(date.getTime() - (3 * 60 * 60 * 1000))
-    
-    // Formatear como ISO sin la Z (hora local Argentina)
-    const year = argentinaDate.getUTCFullYear()
-    const month = (argentinaDate.getUTCMonth() + 1).toString().padStart(2, '0')
-    const day = argentinaDate.getUTCDate().toString().padStart(2, '0')
-    const hours = argentinaDate.getUTCHours().toString().padStart(2, '0')
-    const minutes = argentinaDate.getUTCMinutes().toString().padStart(2, '0')
-    const seconds = argentinaDate.getUTCSeconds().toString().padStart(2, '0')
-    
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-  } catch {
-    return dateStr
-  }
+  // Devolver la fecha tal cual viene del POS (ya está en hora Argentina)
+  // Solo limpiamos la "Z" si existiera para evitar confusiones
+  return dateStr.replace('Z', '').replace('+00:00', '')
 }
 
 function getAutoDateRange(): { fromDate: string; toDate: string } {
