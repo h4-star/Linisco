@@ -55,36 +55,6 @@ function extractDateOnly(dateStr: string | undefined | null): string | null {
   return null
 }
 
-// Helper para parsear fechas en diferentes formatos (mantener para otros usos)
-function parseDate(dateStr: string | undefined | null): Date | null {
-  if (!dateStr) return null
-  
-  // Primero intentar como ISO
-  let date = new Date(dateStr)
-  if (!isNaN(date.getTime())) return date
-  
-  // Intentar dd/mm/yyyy HH:mm:ss o dd/mm/yyyy
-  const dateTimeParts = dateStr.split(' ')
-  const datePart = dateTimeParts[0]
-  const parts = datePart.split('/')
-  if (parts.length === 3) {
-    const [day, month, year] = parts
-    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    if (!isNaN(date.getTime())) return date
-  }
-  
-  // Intentar yyyy-mm-dd
-  const isoParts = datePart.split('-')
-  if (isoParts.length === 3 && isoParts[0].length === 4) {
-    const [year, month, day] = isoParts
-    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    if (!isNaN(date.getTime())) return date
-  }
-  
-  console.log(`⚠️ Could not parse date: ${dateStr}`)
-  return null
-}
-
 export function useSalesData(fromDate?: string, toDate?: string) {
   const [state, setState] = useState<SalesDataState>({
     orders: [],
@@ -132,14 +102,15 @@ export function useSalesData(fromDate?: string, toDate?: string) {
 
       console.log(`📊 Datos de Supabase: ${ordersData.length} órdenes, ${productsData.length} productos`)
       if (ordersData.length > 0) {
-        console.log(`📅 Primera orden - orderDate: ${ordersData[0].orderDate}`)
+        console.log(`📅 Primera orden - orderDate: "${ordersData[0].orderDate}"`)
+        console.log(`📅 Extraída como: "${extractDateOnly(ordersData[0].orderDate)}"`)
       }
 
       // Filtrar por fecha en el cliente
       let filteredOrders = ordersData
       
       if (fromDate || toDate) {
-        console.log(`🔍 Filtro: desde ${fromDate} hasta ${toDate}`)
+        console.log(`🔍 Filtro: desde "${fromDate}" hasta "${toDate}"`)
         
         filteredOrders = filteredOrders.filter(order => {
           // Extraer solo la parte YYYY-MM-DD del orderDate (sin convertir a Date)
@@ -151,13 +122,23 @@ export function useSalesData(fromDate?: string, toDate?: string) {
           }
           
           // Comparar strings de fecha directamente (formato YYYY-MM-DD ordena correctamente)
-          if (fromDate && orderDateStr < fromDate) return false
-          if (toDate && orderDateStr > toDate) return false
+          const beforeFrom = fromDate && orderDateStr < fromDate
+          const afterTo = toDate && orderDateStr > toDate
+          
+          if (beforeFrom || afterTo) {
+            return false
+          }
           
           return true
         })
         
         console.log(`📋 Después del filtro: ${filteredOrders.length} órdenes`)
+        
+        // Si no hay órdenes después del filtro, mostrar algunas fechas disponibles
+        if (filteredOrders.length === 0 && ordersData.length > 0) {
+          const availableDates = [...new Set(ordersData.slice(0, 10).map(o => extractDateOnly(o.orderDate)))].filter(Boolean)
+          console.log(`📅 Fechas disponibles en los datos: ${availableDates.join(', ')}`)
+        }
       }
 
       // Obtener IDs de órdenes filtradas para filtrar productos
