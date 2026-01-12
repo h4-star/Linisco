@@ -108,7 +108,7 @@ export function CashClosingSection({ userId, assignedShops }: CashClosingSection
         status: 'pending',
       }
       
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('cash_closings')
         .insert(insertData as any)
         .select()
