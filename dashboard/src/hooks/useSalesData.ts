@@ -32,29 +32,6 @@ interface SalesDataState {
   isDemo: boolean
 }
 
-// Helper para extraer SOLO la parte de la fecha (YYYY-MM-DD) de un string de fecha
-// Esto evita problemas de zona horaria ya que comparamos solo strings de fecha
-function extractDateOnly(dateStr: string | undefined | null): string | null {
-  if (!dateStr) return null
-  
-  // Si es formato ISO (2025-12-30T23:30:00 o 2025-12-30T23:30:00Z)
-  // Extraer solo YYYY-MM-DD directamente del string
-  const isoMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/)
-  if (isoMatch) {
-    return isoMatch[1] // Retorna "2025-12-30"
-  }
-  
-  // Si es formato dd/mm/yyyy HH:mm:ss o dd/mm/yyyy
-  const dmyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
-  if (dmyMatch) {
-    const [, day, month, year] = dmyMatch
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-  }
-  
-  console.log(`⚠️ Could not extract date from: ${dateStr}`)
-  return null
-}
-
 export function useSalesData(fromDate?: string, toDate?: string) {
   const [state, setState] = useState<SalesDataState>({
     orders: [],

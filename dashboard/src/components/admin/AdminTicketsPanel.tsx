@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Wrench, Loader2, CheckCircle, AlertTriangle, XCircle, Clock,
-  ChevronDown, ChevronUp, Filter, MessageSquare, Send, User
+  ChevronDown, ChevronUp, Send
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Ticket, TicketType, TicketPriority, TicketStatus, TicketComment } from '../../types/database'
@@ -12,7 +12,7 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-interface TicketWithUser extends Ticket {
+interface TicketWithUser extends Omit<Ticket, 'user'> {
   user?: {
     email: string
     full_name: string | null
@@ -91,7 +91,7 @@ export function AdminTicketsPanel() {
         .update({ 
           status: newStatus,
           updated_at: new Date().toISOString()
-        })
+        } as any as never)
         .eq('id', ticketId)
 
       if (error) throw error
@@ -119,7 +119,7 @@ export function AdminTicketsPanel() {
           ticket_id: ticketId,
           user_id: user.id,
           comment: comment
-        })
+        } as any as never)
 
       if (error) throw error
 

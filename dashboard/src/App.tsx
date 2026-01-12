@@ -29,7 +29,7 @@ const formatCurrency = (value: number) => {
 
 function App() {
   const { user, loading: authLoading, error: authError, isAuthenticated, signIn, signOut } = useAuth()
-  const { profile, role, loading: roleLoading, isAdmin, updateProfile } = useUserRole(user?.id)
+  const { profile, loading: roleLoading, isAdmin, updateProfile } = useUserRole(user?.id)
   
   const today = format(new Date(), 'yyyy-MM-dd')
   // Por defecto mostrar últimos 7 días

@@ -16,7 +16,7 @@ interface AdminCashClosingsPanelProps {
   toDate: string
 }
 
-interface ClosingWithUser extends CashClosing {
+interface ClosingWithUser extends Omit<CashClosing, 'user'> {
   user?: {
     email: string
     full_name: string | null
@@ -72,7 +72,7 @@ export function AdminCashClosingsPanel({ orders, fromDate, toDate }: AdminCashCl
 
       if (error) throw error
       
-      const closingsWithComparison = (data || []).map(closing => {
+      const closingsWithComparison = (data || []).map((closing: any) => {
         const apiData = calculateApiDataForClosing(closing)
         return {
           ...closing,
@@ -83,7 +83,7 @@ export function AdminCashClosingsPanel({ orders, fromDate, toDate }: AdminCashCl
           variance_percentage: apiData.total > 0 
             ? ((closing.total_declared - apiData.total) / apiData.total) * 100 
             : 0
-        }
+        } as ClosingWithUser
       })
       
       setClosings(closingsWithComparison)
@@ -165,7 +165,7 @@ export function AdminCashClosingsPanel({ orders, fromDate, toDate }: AdminCashCl
           admin_notes: editForm.admin_notes || null,
           reviewed_by: (await supabase.auth.getUser()).data.user?.id,
           reviewed_at: new Date().toISOString()
-        })
+        } as any as never)
         .eq('id', closingId)
 
       if (error) throw error
@@ -190,7 +190,7 @@ export function AdminCashClosingsPanel({ orders, fromDate, toDate }: AdminCashCl
           admin_notes: adminNotes || null,
           reviewed_by: (await supabase.auth.getUser()).data.user?.id,
           reviewed_at: new Date().toISOString()
-        })
+        } as any as never)
         .eq('id', closingId)
 
       if (error) throw error

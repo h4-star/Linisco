@@ -60,7 +60,7 @@ export function MessagesSection({ userId }: MessagesSectionProps) {
           message: message.trim(),
           category,
           status: 'pending',
-        })
+        } as any)
 
       if (error) throw error
 

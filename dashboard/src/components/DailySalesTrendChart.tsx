@@ -38,7 +38,7 @@ function extractDateOnly(dateStr: string | undefined | null): string | null {
 
 // Formatear fecha para mostrar (DD/MM)
 function formatDateForDisplay(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-')
+  const [, month, day] = dateStr.split('-')
   return `${day}/${month}`
 }
 

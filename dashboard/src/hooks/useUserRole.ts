@@ -46,17 +46,17 @@ export function useUserRole(userId: string | undefined) {
             const email = userData?.user?.email || ''
             const isAdminUser = email === ADMIN_EMAIL
             
-            const newProfile: Partial<UserProfile> = {
+            const newProfile = {
               id: userId,
               email: email,
-              role: isAdminUser ? 'admin' : 'employee',
+              role: (isAdminUser ? 'admin' : 'employee') as UserRole,
               assigned_shops: [],
               is_active: true,
             }
             
             const { data: createdProfile, error: createError } = await supabase
               .from('user_profiles')
-              .insert(newProfile)
+              .insert(newProfile as any)
               .select()
               .single()
 
@@ -70,20 +70,21 @@ export function useUserRole(userId: string | undefined) {
                 loading: false,
                 error: null,
                 isAdmin: role === 'admin',
-                isManager: role === 'manager',
+                isManager: false, // Manager no se usa actualmente
                 isEmployee: role === 'employee',
               })
               return
             }
 
+            const profile = createdProfile as UserProfile
             setState({
-              profile: createdProfile,
-              role: createdProfile.role,
+              profile,
+              role: profile.role,
               loading: false,
               error: null,
-              isAdmin: createdProfile.role === 'admin',
-              isManager: createdProfile.role === 'manager',
-              isEmployee: createdProfile.role === 'employee',
+              isAdmin: profile.role === 'admin',
+              isManager: profile.role === 'manager',
+              isEmployee: profile.role === 'employee',
             })
             return
           }
@@ -91,14 +92,15 @@ export function useUserRole(userId: string | undefined) {
           throw error
         }
 
+        const profile = data as UserProfile
         setState({
-          profile: data,
-          role: data.role,
+          profile,
+          role: profile.role,
           loading: false,
           error: null,
-          isAdmin: data.role === 'admin',
-          isManager: data.role === 'manager',
-          isEmployee: data.role === 'employee',
+          isAdmin: profile.role === 'admin',
+          isManager: profile.role === 'manager',
+          isEmployee: profile.role === 'employee',
         })
       } catch (err: any) {
         console.error('Error fetching profile:', err)
@@ -114,7 +116,7 @@ export function useUserRole(userId: string | undefined) {
           loading: false,
           error: err.message,
           isAdmin: role === 'admin',
-          isManager: role === 'manager',
+          isManager: false, // Manager no se usa actualmente
           isEmployee: role === 'employee',
         })
       }
@@ -129,16 +131,17 @@ export function useUserRole(userId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .update(updates)
+        .update(updates as any as never)
         .eq('id', userId)
         .select()
         .single()
 
       if (error) throw error
 
+      const profile = data as UserProfile
       setState(prev => ({
         ...prev,
-        profile: data,
+        profile,
       }))
 
       return { success: true, error: null }

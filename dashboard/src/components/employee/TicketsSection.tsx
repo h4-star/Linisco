@@ -85,7 +85,7 @@ export function TicketsSection({ userId, assignedShops }: TicketsSectionProps) {
           date_to: needsDateRange && dateTo ? dateTo : null,
           status: 'open',
           attachments: [],
-        })
+        } as any)
 
       if (error) throw error
 

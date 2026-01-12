@@ -113,7 +113,7 @@ export function CashClosingSection({ userId, assignedShops }: CashClosingSection
       
       const { data, error: insertError } = await supabase
         .from('cash_closings')
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
 
       console.log('Respuesta:', { data, error: insertError })

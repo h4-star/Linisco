@@ -79,28 +79,6 @@ export function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartP
     }
   }, [hasSyntheticOrders, fromDate, toDate, orders.length])
   
-  // Extraer días únicos para referencia
-  const uniqueDates = new Set<string>()
-  orders.forEach(order => {
-    if (order.idSaleOrder?.startsWith('SUMMARY-')) {
-      // Extraer fecha del ID: SUMMARY-2026-01-05-...
-      const dateMatch = order.idSaleOrder.match(/SUMMARY-(\d{4}-\d{2}-\d{2})/)
-      if (dateMatch) {
-        uniqueDates.add(dateMatch[1])
-      }
-    } else {
-      // Orden real, extraer fecha del orderDate
-      try {
-        const date = new Date(order.orderDate)
-        if (!isNaN(date.getTime())) {
-          uniqueDates.add(date.toISOString().split('T')[0])
-        }
-      } catch {}
-    }
-  })
-  
-  const numberOfDays = uniqueDates.size || 1
-  
   // Usar órdenes reales si están disponibles, sino usar las órdenes recibidas
   const ordersToUse = hasSyntheticOrders && realOrdersForHours.length > 0 
     ? realOrdersForHours 
@@ -149,8 +127,9 @@ export function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartP
   const shops = [...new Set(orders.map(o => o.shopName))]
 
   // Convert to chart format
-  const chartData = Object.entries(hourlyData).map(([hour, shopCounts]) => {
-    const data: Record<string, number> = { hour: `${parseInt(hour).toString().padStart(2, '0')}:00` }
+  const chartData = Object.entries(hourlyData).map(([hourStr, shopCounts]) => {
+    const hour = parseInt(hourStr)
+    const data: Record<string, number | string> = { hour: `${hour.toString().padStart(2, '0')}:00` }
     
     Object.entries(shopCounts).forEach(([shop, count]) => {
       // Redondear a 1 decimal para promedios

@@ -54,7 +54,7 @@ export function AdminMessagesPanel() {
           status: 'replied',
           replied_at: new Date().toISOString(),
           replied_by: userData.user?.id,
-        })
+        } as any as never)
         .eq('id', messageId)
 
       if (error) throw error
@@ -73,7 +73,7 @@ export function AdminMessagesPanel() {
     try {
       await supabase
         .from('employee_messages')
-        .update({ status: 'read' })
+        .update({ status: 'read' } as any as never)
         .eq('id', messageId)
       
       fetchMessages()
@@ -86,7 +86,7 @@ export function AdminMessagesPanel() {
     try {
       await supabase
         .from('employee_messages')
-        .update({ status: 'archived' })
+        .update({ status: 'archived' } as any as never)
         .eq('id', messageId)
       
       fetchMessages()
