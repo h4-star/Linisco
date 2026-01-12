@@ -37,7 +37,10 @@ function App() {
   const [toDate, setToDate] = useState(today)
   const [adminView, setAdminView] = useState<AdminView>('dashboard')
   
-  const { orders, products, loading, isDemo, refetch } = useSalesData(fromDate, toDate)
+  const salesData = useSalesData(fromDate, toDate)
+  const orders = Array.isArray(salesData.orders) ? salesData.orders : []
+  const products = Array.isArray(salesData.products) ? salesData.products : []
+  const { loading, isDemo, refetch } = salesData
 
   // Pantalla de carga inicial
   if (authLoading || roleLoading) {
@@ -74,11 +77,15 @@ function App() {
 
   // Dashboard de admin - Memoizar cálculos pesados
   const stats = useMemo(() => {
-    const totalSales = orders.reduce((sum, o) => sum + o.total, 0)
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return { totalSales: 0, totalSalesNoIVA: 0, totalTickets: 0, avgTicket: 0, uniqueShops: 0 }
+    }
+    
+    const totalSales = orders.reduce((sum, o) => sum + (o?.total || 0), 0)
     const totalSalesNoIVA = totalSales / 1.21
     const totalTickets = orders.length
     const avgTicket = totalTickets > 0 ? totalSales / totalTickets : 0
-    const uniqueShops = new Set(orders.map(o => o.shopName)).size
+    const uniqueShops = new Set(orders.map(o => o?.shopName).filter(Boolean)).size
     
     return { totalSales, totalSalesNoIVA, totalTickets, avgTicket, uniqueShops }
   }, [orders])
