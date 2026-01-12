@@ -42,6 +42,21 @@ function App() {
   const products = Array.isArray(salesData.products) ? salesData.products : []
   const { loading, isDemo, refetch } = salesData
 
+  // Dashboard de admin - Memoizar cálculos pesados (SIEMPRE ejecutar, antes de returns condicionales)
+  const stats = useMemo(() => {
+    if (!Array.isArray(orders) || orders.length === 0) {
+      return { totalSales: 0, totalSalesNoIVA: 0, totalTickets: 0, avgTicket: 0, uniqueShops: 0 }
+    }
+    
+    const totalSales = orders.reduce((sum, o) => sum + (o?.total || 0), 0)
+    const totalSalesNoIVA = totalSales / 1.21
+    const totalTickets = orders.length
+    const avgTicket = totalTickets > 0 ? totalSales / totalTickets : 0
+    const uniqueShops = new Set(orders.map(o => o?.shopName).filter(Boolean)).size
+    
+    return { totalSales, totalSalesNoIVA, totalTickets, avgTicket, uniqueShops }
+  }, [orders])
+
   // Pantalla de carga inicial
   if (authLoading || roleLoading) {
     return (
@@ -74,21 +89,6 @@ function App() {
       />
     )
   }
-
-  // Dashboard de admin - Memoizar cálculos pesados
-  const stats = useMemo(() => {
-    if (!Array.isArray(orders) || orders.length === 0) {
-      return { totalSales: 0, totalSalesNoIVA: 0, totalTickets: 0, avgTicket: 0, uniqueShops: 0 }
-    }
-    
-    const totalSales = orders.reduce((sum, o) => sum + (o?.total || 0), 0)
-    const totalSalesNoIVA = totalSales / 1.21
-    const totalTickets = orders.length
-    const avgTicket = totalTickets > 0 ? totalSales / totalTickets : 0
-    const uniqueShops = new Set(orders.map(o => o?.shopName).filter(Boolean)).size
-    
-    return { totalSales, totalSalesNoIVA, totalTickets, avgTicket, uniqueShops }
-  }, [orders])
 
   if (loading) {
     return (
