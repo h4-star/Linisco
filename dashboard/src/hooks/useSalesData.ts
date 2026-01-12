@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import type { SaleOrder, SaleProduct } from '../types/database'
+import type { SaleOrder, SaleProduct, DailySalesSummary } from '../types/database'
 
 // Demo data for when Supabase is not configured
 const DEMO_ORDERS: SaleOrder[] = [
@@ -81,73 +81,280 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         return
       }
 
-      // Fetch ALL orders
-      const { data: allOrders, error: ordersError } = await supabase
-        .from('sale_orders')
-        .select('*')
-        .order('orderDate', { ascending: false })
+      console.log(`🔍 Filtro: desde "${fromDate}" hasta "${toDate}"`)
 
-      if (ordersError) throw ordersError
-
-      // Fetch ALL products
-      const { data: allProducts, error: productsError } = await supabase
-        .from('sale_products')
-        .select('*')
-
-      if (productsError) throw productsError
-
-      // Castear los datos
-      const ordersData = (allOrders || []) as SaleOrder[]
-      const productsData = (allProducts || []) as SaleProduct[]
-
-      console.log(`📊 Datos de Supabase: ${ordersData.length} órdenes, ${productsData.length} productos`)
-      if (ordersData.length > 0) {
-        console.log(`📅 Primera orden - orderDate: "${ordersData[0].orderDate}"`)
-        console.log(`📅 Extraída como: "${extractDateOnly(ordersData[0].orderDate)}"`)
-      }
-
-      // Filtrar por fecha en el cliente
-      let filteredOrders = ordersData
+      // Intentar usar la tabla de resumen diario primero (más eficiente y sin límite de 1000)
+      let useSummary = true
+      let summaryData: DailySalesSummary[] = []
       
-      if (fromDate || toDate) {
-        console.log(`🔍 Filtro: desde "${fromDate}" hasta "${toDate}"`)
-        
-        filteredOrders = filteredOrders.filter(order => {
-          // Extraer solo la parte YYYY-MM-DD del orderDate (sin convertir a Date)
-          // Esto evita problemas de zona horaria porque comparamos strings directamente
-          const orderDateStr = extractDateOnly(order.orderDate)
-          if (!orderDateStr) {
-            console.log(`⚠️ No se pudo extraer fecha de: ${order.orderDate}`)
-            return true // Si no puede parsear, incluir
-          }
-          
-          // Comparar strings de fecha directamente (formato YYYY-MM-DD ordena correctamente)
-          const beforeFrom = fromDate && orderDateStr < fromDate
-          const afterTo = toDate && orderDateStr > toDate
-          
-          if (beforeFrom || afterTo) {
-            return false
-          }
-          
-          return true
-        })
-        
-        console.log(`📋 Después del filtro: ${filteredOrders.length} órdenes`)
-        
-        // Si no hay órdenes después del filtro, mostrar algunas fechas disponibles
-        if (filteredOrders.length === 0 && ordersData.length > 0) {
-          const availableDates = [...new Set(ordersData.slice(0, 10).map(o => extractDateOnly(o.orderDate)))].filter(Boolean)
-          console.log(`📅 Fechas disponibles en los datos: ${availableDates.join(', ')}`)
+      try {
+        let summaryQuery = supabase
+          .from('daily_sales_summary')
+          .select('*')
+          .order('sale_date', { ascending: false })
+
+        if (fromDate) {
+          summaryQuery = summaryQuery.gte('sale_date', fromDate)
         }
+        if (toDate) {
+          summaryQuery = summaryQuery.lte('sale_date', toDate)
+        }
+
+        const { data: summary, error: summaryError } = await summaryQuery
+
+        if (!summaryError && summary && summary.length > 0) {
+          summaryData = summary as DailySalesSummary[]
+          console.log(`📊 Resumen diario encontrado: ${summaryData.length} días`)
+        } else {
+          console.log(`⚠️ No se encontró resumen diario, usando sale_orders directamente`)
+          useSummary = false
+        }
+      } catch (e) {
+        console.log(`⚠️ Error al consultar resumen: ${e}, usando sale_orders directamente`)
+        useSummary = false
       }
 
-      // Obtener IDs de órdenes filtradas para filtrar productos
-      const orderIds = new Set(filteredOrders.map(o => o.idSaleOrder))
+      let filteredOrders: SaleOrder[] = []
+
+      if (useSummary && summaryData.length > 0) {
+        // Reconstruir órdenes desde el resumen para compatibilidad con los componentes
+        // Esto permite usar los gráficos sin cambios
+        filteredOrders = summaryData.flatMap(summary => {
+          const orders: SaleOrder[] = []
+          // Crear órdenes "sintéticas" basadas en el resumen
+          // Distribuir las ventas en órdenes aproximadas
+          const ticketsPerDay = summary.total_tickets
+          const avgTicket = summary.avg_ticket
+          
+          // Crear órdenes distribuidas por método de pago
+          const cashTickets = Math.round((summary.total_cash / summary.total_sales) * ticketsPerDay) || 0
+          const cardTickets = Math.round((summary.total_card / summary.total_sales) * ticketsPerDay) || 0
+          const mpTickets = Math.round((summary.total_mercadopago / summary.total_sales) * ticketsPerDay) || 0
+          const otherTickets = ticketsPerDay - cashTickets - cardTickets - mpTickets
+
+          // Función helper para generar hora distribuida (8am a 10pm)
+          const getDistributedHour = (index: number, total: number): string => {
+            // Distribuir uniformemente entre 8am (8) y 10pm (22)
+            const hour = 8 + Math.floor((index / total) * 14)
+            const minutes = Math.floor((index % 3) * 20) // 0, 20, 40
+            return `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`
+          }
+
+          let orderIndex = 0
+
+          // Crear órdenes de efectivo
+          for (let i = 0; i < cashTickets; i++) {
+            const hour = getDistributedHour(orderIndex, ticketsPerDay)
+            orders.push({
+              id: parseInt(`${summary.id}${i}1`),
+              idSaleOrder: `SUMMARY-${summary.sale_date}-${summary.shop_name}-CASH-${i}`,
+              number: 0,
+              total: summary.total_cash / cashTickets || avgTicket,
+              orderDate: `${summary.sale_date}T${hour}`,
+              shopNumber: '',
+              shopName: summary.shop_name,
+              paymentmethod: 'Efectivo'
+            })
+            orderIndex++
+          }
+
+          // Crear órdenes de tarjeta
+          for (let i = 0; i < cardTickets; i++) {
+            const hour = getDistributedHour(orderIndex, ticketsPerDay)
+            orders.push({
+              id: parseInt(`${summary.id}${i}2`),
+              idSaleOrder: `SUMMARY-${summary.sale_date}-${summary.shop_name}-CARD-${i}`,
+              number: 0,
+              total: summary.total_card / cardTickets || avgTicket,
+              orderDate: `${summary.sale_date}T${hour}`,
+              shopNumber: '',
+              shopName: summary.shop_name,
+              paymentmethod: 'Tarjeta'
+            })
+            orderIndex++
+          }
+
+          // Crear órdenes de Mercado Pago
+          for (let i = 0; i < mpTickets; i++) {
+            const hour = getDistributedHour(orderIndex, ticketsPerDay)
+            orders.push({
+              id: parseInt(`${summary.id}${i}3`),
+              idSaleOrder: `SUMMARY-${summary.sale_date}-${summary.shop_name}-MP-${i}`,
+              number: 0,
+              total: summary.total_mercadopago / mpTickets || avgTicket,
+              orderDate: `${summary.sale_date}T${hour}`,
+              shopNumber: '',
+              shopName: summary.shop_name,
+              paymentmethod: 'Mercado Pago'
+            })
+            orderIndex++
+          }
+
+          // Crear órdenes de otros métodos (dividir entre Apps Delivery y Otros)
+          // Asumir que 70% de "otros" son apps delivery y 30% son otros métodos
+          const appsTickets = Math.round(otherTickets * 0.7)
+          const otherMethodsTickets = otherTickets - appsTickets
+          
+          for (let i = 0; i < appsTickets; i++) {
+            const hour = getDistributedHour(orderIndex, ticketsPerDay)
+            orders.push({
+              id: parseInt(`${summary.id}${i}4`),
+              idSaleOrder: `SUMMARY-${summary.sale_date}-${summary.shop_name}-APPS-${i}`,
+              number: 0,
+              total: (summary.total_other * 0.7) / appsTickets || avgTicket,
+              orderDate: `${summary.sale_date}T${hour}`,
+              shopNumber: '',
+              shopName: summary.shop_name,
+              paymentmethod: 'Rappi' // Usar Rappi como representante de apps delivery
+            })
+            orderIndex++
+          }
+          
+          for (let i = 0; i < otherMethodsTickets; i++) {
+            const hour = getDistributedHour(orderIndex, ticketsPerDay)
+            orders.push({
+              id: parseInt(`${summary.id}${i}5`),
+              idSaleOrder: `SUMMARY-${summary.sale_date}-${summary.shop_name}-OTHER-${i}`,
+              number: 0,
+              total: (summary.total_other * 0.3) / otherMethodsTickets || avgTicket,
+              orderDate: `${summary.sale_date}T${hour}`,
+              shopNumber: '',
+              shopName: summary.shop_name,
+              paymentmethod: 'Otro'
+            })
+            orderIndex++
+          }
+
+          return orders
+        })
+
+        console.log(`📊 Órdenes reconstruidas desde resumen: ${filteredOrders.length}`)
+        
+        // Cuando usamos el resumen, obtener productos directamente por rango de fechas
+        // en lugar de por IDs de órdenes (que son sintéticos)
+        let filteredProducts: SaleProduct[] = []
+        
+        if (fromDate && toDate) {
+          console.log(`🔍 Obteniendo productos por rango de fechas...`)
+          
+          // Obtener todas las órdenes reales del rango para tener sus IDs
+          let realOrdersQuery = supabase
+            .from('sale_orders')
+            .select('idSaleOrder')
+            .order('orderDate', { ascending: false })
+            .limit(10000) // Límite alto para obtener todos los IDs
+          
+          if (fromDate) {
+            realOrdersQuery = realOrdersQuery.gte('orderDate', `${fromDate}T00:00:00`)
+          }
+          if (toDate) {
+            realOrdersQuery = realOrdersQuery.lte('orderDate', `${toDate}T23:59:59`)
+          }
+          
+          const { data: realOrders, error: realOrdersError } = await realOrdersQuery
+          
+          if (!realOrdersError && realOrders && realOrders.length > 0) {
+            const realOrderIds = realOrders.map((o: any) => o.idSaleOrder)
+            console.log(`📋 Encontradas ${realOrderIds.length} órdenes reales para productos`)
+            
+            // Obtener productos en batches
+            const batchSize = 500
+            for (let i = 0; i < realOrderIds.length; i += batchSize) {
+              const batchIds = realOrderIds.slice(i, i + batchSize)
+              
+              const { data: batchProducts, error: productsError } = await supabase
+                .from('sale_products')
+                .select('*')
+                .in('idSaleOrder', batchIds)
+              
+              if (productsError) {
+                console.error('Error obteniendo productos:', productsError)
+              } else {
+                filteredProducts = filteredProducts.concat((batchProducts || []) as SaleProduct[])
+              }
+            }
+            
+            console.log(`📦 Productos encontrados: ${filteredProducts.length}`)
+          } else {
+            console.log(`⚠️ No se pudieron obtener órdenes reales para productos`)
+          }
+        }
+        
+        setState({
+          orders: filteredOrders,
+          products: filteredProducts,
+          loading: false,
+          error: null,
+          isDemo: false
+        })
+        return
+      } else {
+        // Fallback: usar sale_orders directamente con paginación
+        let allOrders: SaleOrder[] = []
+        let offset = 0
+        const limit = 1000
+        let hasMore = true
+
+        while (hasMore) {
+          let ordersQuery = supabase
+            .from('sale_orders')
+            .select('*')
+            .order('orderDate', { ascending: false })
+            .range(offset, offset + limit - 1)
+
+          if (fromDate) {
+            ordersQuery = ordersQuery.gte('orderDate', `${fromDate}T00:00:00`)
+          }
+          if (toDate) {
+            ordersQuery = ordersQuery.lte('orderDate', `${toDate}T23:59:59`)
+          }
+
+          const { data: batch, error: ordersError } = await ordersQuery
+
+          if (ordersError) throw ordersError
+
+          if (batch && batch.length > 0) {
+            allOrders = allOrders.concat(batch as SaleOrder[])
+            offset += limit
+            hasMore = batch.length === limit
+          } else {
+            hasMore = false
+          }
+        }
+
+        filteredOrders = allOrders
+        console.log(`📊 Órdenes encontradas (con paginación): ${filteredOrders.length}`)
+      }
+
+      // Ahora obtener los productos SOLO de las órdenes reales (no sintéticas)
+      // Filtrar solo IDs que no sean sintéticos (no empiezan con "SUMMARY-")
+      const realOrderIds = filteredOrders
+        .filter(o => !o.idSaleOrder.startsWith('SUMMARY-'))
+        .map(o => o.idSaleOrder)
       
-      // Filtrar productos que pertenecen a las órdenes filtradas
-      const filteredProducts = productsData.filter(p => 
-        orderIds.has(p.idSaleOrder)
-      )
+      let filteredProducts: SaleProduct[] = []
+      
+      if (realOrderIds.length > 0) {
+        console.log(`🔍 Buscando productos para ${realOrderIds.length} órdenes reales...`)
+        // Dividir en batches de 500 IDs para evitar límites de query
+        const batchSize = 500
+        for (let i = 0; i < realOrderIds.length; i += batchSize) {
+          const batchIds = realOrderIds.slice(i, i + batchSize)
+          
+          const { data: batchProducts, error: productsError } = await supabase
+            .from('sale_products')
+            .select('*')
+            .in('idSaleOrder', batchIds)
+          
+          if (productsError) throw productsError
+          
+          filteredProducts = filteredProducts.concat((batchProducts || []) as SaleProduct[])
+        }
+      } else {
+        console.log(`⚠️ No hay órdenes reales, productos no disponibles`)
+      }
+
+      console.log(`📦 Productos encontrados: ${filteredProducts.length}`)
 
       console.log(`Datos cargados: ${filteredOrders.length} órdenes, ${filteredProducts.length} productos`)
 

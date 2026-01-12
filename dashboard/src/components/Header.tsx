@@ -1,5 +1,7 @@
-import { Store, RefreshCw, AlertCircle, LogOut, User } from 'lucide-react'
+import { Store, RefreshCw, AlertCircle, LogOut, User, DollarSign, Wrench } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+type AdminView = 'dashboard' | 'closings' | 'tickets'
 
 interface HeaderProps {
   fromDate: string
@@ -11,6 +13,9 @@ interface HeaderProps {
   isDemo: boolean
   user?: SupabaseUser | null
   onSignOut?: () => void
+  isAdmin?: boolean
+  adminView?: AdminView
+  onChangeView?: (view: AdminView) => void
 }
 
 export function Header({ 
@@ -22,7 +27,10 @@ export function Header({
   loading,
   isDemo,
   user,
-  onSignOut
+  onSignOut,
+  isAdmin,
+  adminView = 'dashboard',
+  onChangeView
 }: HeaderProps) {
   return (
     <header className="header">
@@ -55,23 +63,58 @@ export function Header({
             </div>
           )}
           
-          <input
-            type="date"
-            className="date-input"
-            value={fromDate}
-            onChange={(e) => onFromDateChange(e.target.value)}
-          />
-          <span style={{ color: 'var(--text-muted)' }}>a</span>
-          <input
-            type="date"
-            className="date-input"
-            value={toDate}
-            onChange={(e) => onToDateChange(e.target.value)}
-          />
-          <button className="btn" onClick={onRefresh} disabled={loading}>
-            <RefreshCw size={16} className={loading ? 'spinning' : ''} />
-            Actualizar
-          </button>
+          {/* Date filters - show on dashboard and closings views */}
+          {(adminView === 'dashboard' || adminView === 'closings') && (
+            <>
+              <input
+                type="date"
+                className="date-input"
+                value={fromDate}
+                onChange={(e) => onFromDateChange(e.target.value)}
+              />
+              <span style={{ color: 'var(--text-muted)' }}>a</span>
+              <input
+                type="date"
+                className="date-input"
+                value={toDate}
+                onChange={(e) => onToDateChange(e.target.value)}
+              />
+              <button className="btn" onClick={onRefresh} disabled={loading}>
+                <RefreshCw size={16} className={loading ? 'spinning' : ''} />
+                Actualizar
+              </button>
+            </>
+          )}
+
+          {/* Admin navigation */}
+          {isAdmin && onChangeView && (
+            <div className="admin-nav">
+              <button 
+                className={`btn ${adminView === 'dashboard' ? 'btn-active' : 'btn-secondary'}`}
+                onClick={() => onChangeView('dashboard')}
+                title="Dashboard de ventas"
+              >
+                <Store size={16} />
+                Ventas
+              </button>
+              <button 
+                className={`btn ${adminView === 'closings' ? 'btn-active' : 'btn-secondary'}`}
+                onClick={() => onChangeView('closings')}
+                title="Cierres de caja"
+              >
+                <DollarSign size={16} />
+                Cierres
+              </button>
+              <button 
+                className={`btn ${adminView === 'tickets' ? 'btn-active' : 'btn-secondary'}`}
+                onClick={() => onChangeView('tickets')}
+                title="Solicitudes de empleados"
+              >
+                <Wrench size={16} />
+                Solicitudes
+              </button>
+            </div>
+          )}
 
           {/* User menu */}
           {user && (
@@ -83,7 +126,7 @@ export function Header({
               <button 
                 className="btn btn-secondary logout-btn" 
                 onClick={onSignOut}
-                title="Cerrar sesión"
+                title="Cerrar sesion"
               >
                 <LogOut size={16} />
               </button>

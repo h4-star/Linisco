@@ -16,12 +16,39 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
+// Función para categorizar métodos de pago
+function categorizePaymentMethod(method: string): string {
+  const methodLower = method?.toLowerCase() || ''
+  
+  if (methodLower.includes('efectivo') || methodLower.includes('cash')) {
+    return 'Efectivo'
+  }
+  
+  if (methodLower.includes('tarjeta') || methodLower.includes('card') || 
+      methodLower.includes('visa') || methodLower.includes('master') ||
+      methodLower.includes('credito') || methodLower.includes('debito')) {
+    return 'Tarjetas'
+  }
+  
+  if (methodLower.includes('mercado') && methodLower.includes('pago')) {
+    return 'Mercado Pago'
+  }
+  
+  if (methodLower.includes('rappi') || methodLower.includes('pedidos') || 
+      methodLower.includes('uber') || methodLower.includes('delivery') ||
+      methodLower.includes('app')) {
+    return 'Apps Delivery'
+  }
+  
+  return 'Otros'
+}
+
 export function PaymentMethodsChart({ orders }: PaymentMethodsChartProps) {
-  // Group by payment method and shop
+  // Group by categorized payment method and shop
   const dataByMethod: Record<string, Record<string, number>> = {}
 
   orders.forEach(order => {
-    const method = order.paymentmethod || 'Otro'
+    const method = categorizePaymentMethod(order.paymentmethod || 'Otro')
     const shop = order.shopName
     
     if (!dataByMethod[method]) {
@@ -36,11 +63,16 @@ export function PaymentMethodsChart({ orders }: PaymentMethodsChartProps) {
   // Get unique shops
   const shops = [...new Set(orders.map(o => o.shopName))]
 
-  // Convert to chart format
-  const chartData = Object.entries(dataByMethod).map(([method, shopTotals]) => ({
-    method,
-    ...shopTotals
-  }))
+  // Ordenar métodos de pago en orden específico
+  const methodOrder = ['Efectivo', 'Tarjetas', 'Mercado Pago', 'Apps Delivery', 'Otros']
+  
+  // Convert to chart format, ordenado
+  const chartData = methodOrder
+    .filter(method => dataByMethod[method])
+    .map(method => ({
+      method,
+      ...dataByMethod[method]
+    }))
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {

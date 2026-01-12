@@ -6,22 +6,10 @@ interface TopProductsTableProps {
   products: SaleProduct[]
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
-}
-
 type FilterType = 'todos' | 'subway' | 'daniel' | 'seitu'
 
 export function TopProductsTable({ products }: TopProductsTableProps) {
   const [filter, setFilter] = useState<FilterType>('todos')
-  
-  // Debug: mostrar cantidad de productos recibidos
-  console.log('TopProductsTable - productos recibidos:', products.length)
 
   // Filtrar productos según la selección
   const filteredProducts = products.filter(product => {
@@ -32,21 +20,21 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
     return true
   })
 
-  // Aggregate products by name
+  // Aggregate products by name - solo cantidad
   const productTotals = filteredProducts.reduce((acc, product) => {
     const name = product.name || 'Sin nombre'
     if (!acc[name]) {
-      acc[name] = { quantity: 0, total: 0 }
+      acc[name] = { quantity: 0 }
     }
-    acc[name].quantity += Number(product.quantity) || 0
-    acc[name].total += Number(product.total) || 0
+    const quantity = Number(product.quantity) || 0
+    acc[name].quantity += quantity
     return acc
-  }, {} as Record<string, { quantity: number; total: number }>)
+  }, {} as Record<string, { quantity: number }>)
 
-  // Convert to array and sort by total
+  // Convert to array and sort by quantity
   const sortedProducts = Object.entries(productTotals)
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.total - a.total)
+    .map(([name, data]) => ({ name, quantity: data.quantity }))
+    .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 10)
 
   const filters: { key: FilterType; label: string; color: string }[] = [
@@ -100,13 +88,12 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
               <th>#</th>
               <th>Producto</th>
               <th style={{ textAlign: 'right' }}>Cantidad</th>
-              <th style={{ textAlign: 'right' }}>Total</th>
             </tr>
           </thead>
           <tbody>
             {sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
                   No hay productos para este filtro
                 </td>
               </tr>
@@ -124,17 +111,10 @@ export function TopProductsTable({ products }: TopProductsTableProps) {
                   <td style={{ 
                     textAlign: 'right', 
                     fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent-secondary)'
-                  }}>
-                    {product.quantity}
-                  </td>
-                  <td style={{ 
-                    textAlign: 'right', 
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--accent-primary)',
+                    color: 'var(--accent-secondary)',
                     fontWeight: 500
                   }}>
-                    {formatCurrency(product.total)}
+                    {product.quantity}
                   </td>
                 </tr>
               ))
