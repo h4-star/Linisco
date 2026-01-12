@@ -153,7 +153,7 @@ function App() {
   }
 
   return (
-    <>
+    <div style={{ minHeight: '100vh', background: '#0a0f0d', color: '#f0fdf4' }}>
       <Header
         fromDate={fromDate}
         toDate={toDate}
@@ -174,7 +174,7 @@ function App() {
       </main>
 
       <SyncStatus />
-    </>
+    </div>
   )
 }
 

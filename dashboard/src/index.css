@@ -51,11 +51,13 @@ html {
 
 body {
   font-family: var(--font-main);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* Background pattern */
@@ -76,6 +78,8 @@ body::before {
 
 #root {
   min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* Scrollbar */
