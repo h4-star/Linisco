@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { format } from 'date-fns'
 import { DollarSign, Receipt, TrendingUp, Users } from 'lucide-react'
 import { Header } from './components/Header'
@@ -32,10 +32,8 @@ function App() {
   const { profile, loading: roleLoading, isAdmin, updateProfile } = useUserRole(user?.id)
   
   const today = format(new Date(), 'yyyy-MM-dd')
-  // Por defecto mostrar últimos 7 días
-  const weekAgo = format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-  
-  const [fromDate, setFromDate] = useState(weekAgo)
+  // Por defecto mostrar el día actual
+  const [fromDate, setFromDate] = useState(today)
   const [toDate, setToDate] = useState(today)
   const [adminView, setAdminView] = useState<AdminView>('dashboard')
   
@@ -74,12 +72,16 @@ function App() {
     )
   }
 
-  // Dashboard de admin
-  const totalSales = orders.reduce((sum, o) => sum + o.total, 0)
-  const totalSalesNoIVA = totalSales / 1.21
-  const totalTickets = orders.length
-  const avgTicket = totalTickets > 0 ? totalSales / totalTickets : 0
-  const uniqueShops = new Set(orders.map(o => o.shopName)).size
+  // Dashboard de admin - Memoizar cálculos pesados
+  const stats = useMemo(() => {
+    const totalSales = orders.reduce((sum, o) => sum + o.total, 0)
+    const totalSalesNoIVA = totalSales / 1.21
+    const totalTickets = orders.length
+    const avgTicket = totalTickets > 0 ? totalSales / totalTickets : 0
+    const uniqueShops = new Set(orders.map(o => o.shopName)).size
+    
+    return { totalSales, totalSalesNoIVA, totalTickets, avgTicket, uniqueShops }
+  }, [orders])
 
   if (loading) {
     return (
@@ -109,28 +111,28 @@ function App() {
             <div className="grid-stats">
               <StatCard
                 title="Ventas Totales"
-                value={formatCurrency(totalSalesNoIVA)}
+                value={formatCurrency(stats.totalSalesNoIVA)}
                 subtitle="Sin IVA"
                 icon={DollarSign}
                 delay={1}
               />
               <StatCard
                 title="Tickets"
-                value={totalTickets.toLocaleString('es-AR')}
+                value={stats.totalTickets.toLocaleString('es-AR')}
                 subtitle="Transacciones"
                 icon={Receipt}
                 delay={2}
               />
               <StatCard
                 title="Ticket Promedio"
-                value={formatCurrency(avgTicket)}
+                value={formatCurrency(stats.avgTicket)}
                 subtitle="Por transaccion"
                 icon={TrendingUp}
                 delay={3}
               />
               <StatCard
                 title="Locales Activos"
-                value={uniqueShops.toString()}
+                value={stats.uniqueShops.toString()}
                 subtitle="Con ventas"
                 icon={Users}
                 delay={4}

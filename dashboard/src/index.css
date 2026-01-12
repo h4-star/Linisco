@@ -378,11 +378,15 @@ body::before {
 /* Table */
 .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  margin: 0;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 100%;
 }
 
 th, td {
@@ -2087,7 +2091,9 @@ tr:hover td {
   display: none;
 }
 
-/* Responsive */
+/* Responsive - Mobile First Approach */
+
+/* Tablet and below (max-width: 900px) */
 @media (max-width: 900px) {
   .employee-header-mobile {
     display: flex;
@@ -2155,5 +2161,422 @@ tr:hover td {
   
   .type-option {
     justify-content: center;
+  }
+}
+
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Container padding */
+  .container {
+    padding: 0 16px;
+  }
+
+  /* Header */
+  .header {
+    padding: 16px 0;
+    margin-bottom: 24px;
+  }
+
+  .header-content {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .logo-text {
+    font-size: 1.25rem;
+  }
+
+  .logo-subtitle {
+    font-size: 0.7rem;
+  }
+
+  /* Date filter - stack on mobile */
+  .date-filter {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .date-input {
+    flex: 1;
+    min-width: 120px;
+    font-size: 0.8rem;
+    padding: 8px 10px;
+  }
+
+  /* Admin navigation - stack buttons */
+  .admin-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .admin-nav .btn {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    justify-content: center;
+  }
+
+  .admin-nav .btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* User menu */
+  .user-menu {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .user-email {
+    font-size: 0.8rem;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Stats grid */
+  .grid-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+  }
+
+  /* Charts grid */
+  .grid-charts {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Cards */
+  .card {
+    padding: 16px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  /* Tables - make scrollable */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  /* Login page */
+  .login-card {
+    margin: 20px;
+    padding: 24px;
+  }
+
+  .login-form {
+    gap: 16px;
+  }
+
+  /* Form sections */
+  .form-section {
+    padding: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  /* Charts - reduce height on mobile */
+  .chart-container {
+    height: 250px !important;
+  }
+
+  /* ResponsiveContainer in charts - override inline styles */
+  .card [class*="recharts-wrapper"] {
+    height: 250px !important;
+  }
+
+  .card [class*="recharts-surface"] {
+    max-height: 250px;
+  }
+
+  /* Chart legends - smaller on mobile */
+  .recharts-legend-wrapper {
+    font-size: 0.7rem !important;
+  }
+
+  .recharts-legend-item {
+    margin-right: 8px !important;
+  }
+
+  /* Admin panels */
+  .admin-closings-panel,
+  .admin-tickets-panel,
+  .admin-messages-panel {
+    padding: 16px;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .panel-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .panel-actions {
+    width: 100%;
+  }
+
+  .panel-filters {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filters-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .select-filter,
+  .filter-btn {
+    width: 100%;
+  }
+
+  /* Closing cards */
+  .closing-card,
+  .admin-closing-card {
+    padding: 12px;
+  }
+
+  .closing-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .closing-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .closing-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .closing-actions .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Ticket cards */
+  .ticket-card {
+    padding: 12px;
+  }
+
+  .ticket-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ticket-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ticket-actions .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Message cards */
+  .admin-message-card {
+    padding: 12px;
+  }
+
+  .message-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .message-sender {
+    width: 100%;
+  }
+}
+
+/* Small mobile devices (max-width: 480px) */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+
+  .header {
+    padding: 12px 0;
+    margin-bottom: 20px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  .date-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-input {
+    width: 100%;
+  }
+
+  .admin-nav {
+    flex-direction: column;
+  }
+
+  .admin-nav .btn {
+    width: 100%;
+  }
+
+  .user-email {
+    max-width: 120px;
+    font-size: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .card-title {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .login-card {
+    margin: 16px;
+    padding: 20px;
+  }
+
+  .section-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .home-welcome h1 {
+    font-size: 1.5rem;
+  }
+
+  .home-welcome p {
+    font-size: 1rem;
+  }
+
+  /* Charts - even smaller on very small screens */
+  .chart-container {
+    height: 200px !important;
+  }
+
+  /* ResponsiveContainer in charts - smaller */
+  .card [class*="recharts-wrapper"] {
+    height: 200px !important;
+  }
+
+  .card [class*="recharts-surface"] {
+    max-height: 200px;
+  }
+
+  /* Chart legends - even smaller */
+  .recharts-legend-wrapper {
+    font-size: 0.65rem !important;
+  }
+
+  .recharts-legend-item {
+    margin-right: 6px !important;
+  }
+
+  /* Tooltips - smaller font */
+  .recharts-tooltip-wrapper {
+    font-size: 0.7rem !important;
+  }
+
+  /* Smaller text on very small screens */
+  th, td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  th {
+    font-size: 0.7rem;
+  }
+
+  /* Compact buttons */
+  .btn {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+  }
+
+  .btn svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .header {
+    padding: 12px 0;
+  }
+
+  .date-filter {
+    flex-wrap: nowrap;
+  }
+
+  .admin-nav {
+    flex-wrap: nowrap;
   }
 }

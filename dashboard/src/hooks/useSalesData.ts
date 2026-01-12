@@ -58,8 +58,6 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         return
       }
 
-      console.log(`🔍 Filtro: desde "${fromDate}" hasta "${toDate}"`)
-
       // Intentar usar la tabla de resumen diario primero (más eficiente y sin límite de 1000)
       let useSummary = true
       let summaryData: DailySalesSummary[] = []
@@ -81,13 +79,10 @@ export function useSalesData(fromDate?: string, toDate?: string) {
 
         if (!summaryError && summary && summary.length > 0) {
           summaryData = summary as DailySalesSummary[]
-          console.log(`📊 Resumen diario encontrado: ${summaryData.length} días`)
         } else {
-          console.log(`⚠️ No se encontró resumen diario, usando sale_orders directamente`)
           useSummary = false
         }
       } catch (e) {
-        console.log(`⚠️ Error al consultar resumen: ${e}, usando sale_orders directamente`)
         useSummary = false
       }
 
@@ -205,15 +200,11 @@ export function useSalesData(fromDate?: string, toDate?: string) {
           return orders
         })
 
-        console.log(`📊 Órdenes reconstruidas desde resumen: ${filteredOrders.length}`)
-        
         // Cuando usamos el resumen, obtener productos directamente por rango de fechas
         // en lugar de por IDs de órdenes (que son sintéticos)
         let filteredProducts: SaleProduct[] = []
         
         if (fromDate && toDate) {
-          console.log(`🔍 Obteniendo productos por rango de fechas...`)
-          
           // Obtener todas las órdenes reales del rango para tener sus IDs
           let realOrdersQuery = supabase
             .from('sale_orders')
@@ -232,7 +223,6 @@ export function useSalesData(fromDate?: string, toDate?: string) {
           
           if (!realOrdersError && realOrders && realOrders.length > 0) {
             const realOrderIds = realOrders.map((o: any) => o.idSaleOrder)
-            console.log(`📋 Encontradas ${realOrderIds.length} órdenes reales para productos`)
             
             // Obtener productos en batches
             const batchSize = 500
@@ -244,16 +234,10 @@ export function useSalesData(fromDate?: string, toDate?: string) {
                 .select('*')
                 .in('idSaleOrder', batchIds)
               
-              if (productsError) {
-                console.error('Error obteniendo productos:', productsError)
-              } else {
+              if (!productsError && batchProducts) {
                 filteredProducts = filteredProducts.concat((batchProducts || []) as SaleProduct[])
               }
             }
-            
-            console.log(`📦 Productos encontrados: ${filteredProducts.length}`)
-          } else {
-            console.log(`⚠️ No se pudieron obtener órdenes reales para productos`)
           }
         }
         
@@ -300,7 +284,6 @@ export function useSalesData(fromDate?: string, toDate?: string) {
         }
 
         filteredOrders = allOrders
-        console.log(`📊 Órdenes encontradas (con paginación): ${filteredOrders.length}`)
       }
 
       // Ahora obtener los productos SOLO de las órdenes reales (no sintéticas)
@@ -312,7 +295,6 @@ export function useSalesData(fromDate?: string, toDate?: string) {
       let filteredProducts: SaleProduct[] = []
       
       if (realOrderIds.length > 0) {
-        console.log(`🔍 Buscando productos para ${realOrderIds.length} órdenes reales...`)
         // Dividir en batches de 500 IDs para evitar límites de query
         const batchSize = 500
         for (let i = 0; i < realOrderIds.length; i += batchSize) {
@@ -327,13 +309,7 @@ export function useSalesData(fromDate?: string, toDate?: string) {
           
           filteredProducts = filteredProducts.concat((batchProducts || []) as SaleProduct[])
         }
-      } else {
-        console.log(`⚠️ No hay órdenes reales, productos no disponibles`)
       }
-
-      console.log(`📦 Productos encontrados: ${filteredProducts.length}`)
-
-      console.log(`Datos cargados: ${filteredOrders.length} órdenes, ${filteredProducts.length} productos`)
 
       setState({
         orders: filteredOrders,

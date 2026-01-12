@@ -86,7 +86,6 @@ export function CashClosingSection({ userId, assignedShops }: CashClosingSection
     setSaving(true)
     setError(null)
     
-    console.log('Guardando cierre...', { userId, shopName, closingDate, shift })
     
     try {
       const insertData = {
@@ -109,14 +108,10 @@ export function CashClosingSection({ userId, assignedShops }: CashClosingSection
         status: 'pending',
       }
       
-      console.log('Datos a insertar:', insertData)
-      
       const { data, error: insertError } = await supabase
         .from('cash_closings')
         .insert(insertData as any)
         .select()
-
-      console.log('Respuesta:', { data, error: insertError })
 
       if (insertError) {
         console.error('Error de Supabase:', insertError)

@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { PieChart as PieChartIcon } from 'lucide-react'
 import type { SaleOrder } from '../types/database'
@@ -16,24 +17,28 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-export function SalesByShopChart({ orders }: SalesByShopChartProps) {
-  // Group by shop and sum totals
-  const dataByShop = orders.reduce((acc, order) => {
-    const shop = order.shopName
-    if (!acc[shop]) {
-      acc[shop] = 0
-    }
-    acc[shop] += order.total
-    return acc
-  }, {} as Record<string, number>)
+export const SalesByShopChart = memo(function SalesByShopChart({ orders }: SalesByShopChartProps) {
+  // Group by shop and sum totals - Memoizar para evitar recálculos
+  const { chartData, total } = useMemo(() => {
+    const dataByShop = orders.reduce((acc, order) => {
+      const shop = order.shopName
+      if (!acc[shop]) {
+        acc[shop] = 0
+      }
+      acc[shop] += order.total
+      return acc
+    }, {} as Record<string, number>)
 
-  const chartData = Object.entries(dataByShop).map(([name, value]) => ({
-    name,
-    value,
-    color: getShopColor(name)
-  }))
+    const data = Object.entries(dataByShop).map(([name, value]) => ({
+      name,
+      value,
+      color: getShopColor(name)
+    }))
 
-  const total = chartData.reduce((sum, item) => sum + item.value, 0)
+    const totalValue = data.reduce((sum, item) => sum + item.value, 0)
+    
+    return { chartData: data, total: totalValue }
+  }, [orders])
 
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number } }> }) => {
     if (active && payload && payload.length) {
@@ -95,5 +100,5 @@ export function SalesByShopChart({ orders }: SalesByShopChartProps) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
 

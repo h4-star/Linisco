@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { CreditCard } from 'lucide-react'
 import type { SaleOrder } from '../types/database'
@@ -43,36 +44,40 @@ function categorizePaymentMethod(method: string): string {
   return 'Otros'
 }
 
-export function PaymentMethodsChart({ orders }: PaymentMethodsChartProps) {
-  // Group by categorized payment method and shop
-  const dataByMethod: Record<string, Record<string, number>> = {}
+export const PaymentMethodsChart = memo(function PaymentMethodsChart({ orders }: PaymentMethodsChartProps) {
+  // Group by categorized payment method and shop - Memoizar para evitar recálculos
+  const { chartData, shops } = useMemo(() => {
+    const dataByMethod: Record<string, Record<string, number>> = {}
 
-  orders.forEach(order => {
-    const method = categorizePaymentMethod(order.paymentmethod || 'Otro')
-    const shop = order.shopName
+    orders.forEach(order => {
+      const method = categorizePaymentMethod(order.paymentmethod || 'Otro')
+      const shop = order.shopName
+      
+      if (!dataByMethod[method]) {
+        dataByMethod[method] = {}
+      }
+      if (!dataByMethod[method][shop]) {
+        dataByMethod[method][shop] = 0
+      }
+      dataByMethod[method][shop] += order.total
+    })
+
+    // Get unique shops
+    const uniqueShops = [...new Set(orders.map(o => o.shopName))]
+
+    // Ordenar métodos de pago en orden específico
+    const methodOrder = ['Efectivo', 'Tarjetas', 'Mercado Pago', 'Apps Delivery', 'Otros']
     
-    if (!dataByMethod[method]) {
-      dataByMethod[method] = {}
-    }
-    if (!dataByMethod[method][shop]) {
-      dataByMethod[method][shop] = 0
-    }
-    dataByMethod[method][shop] += order.total
-  })
-
-  // Get unique shops
-  const shops = [...new Set(orders.map(o => o.shopName))]
-
-  // Ordenar métodos de pago en orden específico
-  const methodOrder = ['Efectivo', 'Tarjetas', 'Mercado Pago', 'Apps Delivery', 'Otros']
-  
-  // Convert to chart format, ordenado
-  const chartData = methodOrder
-    .filter(method => dataByMethod[method])
-    .map(method => ({
-      method,
-      ...dataByMethod[method]
-    }))
+    // Convert to chart format, ordenado
+    const data = methodOrder
+      .filter(method => dataByMethod[method])
+      .map(method => ({
+        method,
+        ...dataByMethod[method]
+      }))
+    
+    return { chartData: data, shops: uniqueShops }
+  }, [orders])
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
@@ -133,5 +138,5 @@ export function PaymentMethodsChart({ orders }: PaymentMethodsChartProps) {
       </ResponsiveContainer>
     </div>
   )
-}
+})
 

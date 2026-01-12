@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Calendar } from 'lucide-react'
 import type { SaleOrder } from '../types/database'
@@ -42,38 +43,42 @@ function formatDateForDisplay(dateStr: string): string {
   return `${day}/${month}`
 }
 
-export function DailySalesTrendChart({ orders }: DailySalesTrendChartProps) {
-  // Agrupar órdenes por día y por local
-  const dailyData: Record<string, Record<string, number>> = {}
-  
-  orders.forEach(order => {
-    const dateStr = extractDateOnly(order.orderDate)
-    if (!dateStr) return
+export const DailySalesTrendChart = memo(function DailySalesTrendChart({ orders }: DailySalesTrendChartProps) {
+  // Agrupar órdenes por día y por local - Memoizar para evitar recálculos
+  const { chartData, shops } = useMemo(() => {
+    const dailyData: Record<string, Record<string, number>> = {}
     
-    const shop = order.shopName
-    
-    if (!dailyData[dateStr]) {
-      dailyData[dateStr] = {}
-    }
-    
-    if (!dailyData[dateStr][shop]) {
-      dailyData[dateStr][shop] = 0
-    }
-    
-    dailyData[dateStr][shop] += order.total
-  })
+    orders.forEach(order => {
+      const dateStr = extractDateOnly(order.orderDate)
+      if (!dateStr) return
+      
+      const shop = order.shopName
+      
+      if (!dailyData[dateStr]) {
+        dailyData[dateStr] = {}
+      }
+      
+      if (!dailyData[dateStr][shop]) {
+        dailyData[dateStr][shop] = 0
+      }
+      
+      dailyData[dateStr][shop] += order.total
+    })
 
-  // Obtener todos los locales únicos
-  const shops = [...new Set(orders.map(o => o.shopName))]
+    // Obtener todos los locales únicos
+    const uniqueShops = [...new Set(orders.map(o => o.shopName))]
 
-  // Convertir a formato de gráfico y ordenar por fecha
-  const chartData = Object.entries(dailyData)
-    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-    .map(([date, shopTotals]) => ({
-      date,
-      dateLabel: formatDateForDisplay(date),
-      ...shopTotals
-    }))
+    // Convertir a formato de gráfico y ordenar por fecha
+    const data = Object.entries(dailyData)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([date, shopTotals]) => ({
+        date,
+        dateLabel: formatDateForDisplay(date),
+        ...shopTotals
+      }))
+    
+    return { chartData: data, shops: uniqueShops }
+  }, [orders])
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
@@ -151,4 +156,4 @@ export function DailySalesTrendChart({ orders }: DailySalesTrendChartProps) {
       </ResponsiveContainer>
     </div>
   )
-}
+})

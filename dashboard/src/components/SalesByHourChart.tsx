@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { Clock } from 'lucide-react'
 import type { SaleOrder } from '../types/database'
@@ -11,7 +11,7 @@ interface SalesByHourChartProps {
   toDate?: string
 }
 
-export function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartProps) {
+export const SalesByHourChart = memo(function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartProps) {
   const [realOrdersForHours, setRealOrdersForHours] = useState<SaleOrder[]>([])
   const [loadingHours, setLoadingHours] = useState(false)
   // Detectar si estamos usando órdenes sintéticas (del resumen)
@@ -84,60 +84,64 @@ export function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartP
     ? realOrdersForHours 
     : orders
   
-  // Extract hour from orderDate and group by shop
-  const hourlyData: Record<number, Record<string, number>> = {}
-  
-  // Initialize all hours
-  for (let i = 0; i < 24; i++) {
-    hourlyData[i] = {}
-  }
-
-  ordersToUse.forEach((order: any) => {
-    let hour: number
-    const scaleFactor = order.scaleFactor || 1 // Factor de escala si viene de muestra
+  // Extract hour from orderDate and group by shop - Memoizar para evitar recálculos
+  const { chartData, shops } = useMemo(() => {
+    const hourlyData: Record<number, Record<string, number>> = {}
     
-    // Si la orden es sintética (del resumen) y no tenemos órdenes reales, distribuir las horas
-    if (order.idSaleOrder?.startsWith('SUMMARY-') && realOrdersForHours.length === 0) {
-      // Distribuir uniformemente a lo largo del día (8am a 10pm)
-      const orderIndex = parseInt(order.idSaleOrder.split('-').pop() || '0')
-      hour = 8 + (orderIndex % 14) // 8am a 10pm (14 horas)
-    } else {
-      // Orden real, usar la hora real
-      try {
-        const date = new Date(order.orderDate)
-        hour = date.getHours()
-        if (isNaN(hour)) {
+    // Initialize all hours
+    for (let i = 0; i < 24; i++) {
+      hourlyData[i] = {}
+    }
+
+    ordersToUse.forEach((order: any) => {
+      let hour: number
+      const scaleFactor = order.scaleFactor || 1 // Factor de escala si viene de muestra
+      
+      // Si la orden es sintética (del resumen) y no tenemos órdenes reales, distribuir las horas
+      if (order.idSaleOrder?.startsWith('SUMMARY-') && realOrdersForHours.length === 0) {
+        // Distribuir uniformemente a lo largo del día (8am a 10pm)
+        const orderIndex = parseInt(order.idSaleOrder.split('-').pop() || '0')
+        hour = 8 + (orderIndex % 14) // 8am a 10pm (14 horas)
+      } else {
+        // Orden real, usar la hora real
+        try {
+          const date = new Date(order.orderDate)
+          hour = date.getHours()
+          if (isNaN(hour)) {
+            hour = 12
+          }
+        } catch {
           hour = 12
         }
-      } catch {
-        hour = 12
       }
-    }
-    
-    const shop = order.shopName
-    
-    if (!hourlyData[hour][shop]) {
-      hourlyData[hour][shop] = 0
-    }
-    // Aplicar factor de escala si existe (para promedios diarios)
-    hourlyData[hour][shop] += scaleFactor
-  })
+      
+      const shop = order.shopName
+      
+      if (!hourlyData[hour][shop]) {
+        hourlyData[hour][shop] = 0
+      }
+      // Aplicar factor de escala si existe (para promedios diarios)
+      hourlyData[hour][shop] += scaleFactor
+    })
 
-  // Get unique shops
-  const shops = [...new Set(orders.map(o => o.shopName))]
+    // Get unique shops
+    const uniqueShops = [...new Set(orders.map(o => o.shopName))]
 
-  // Convert to chart format
-  const chartData = Object.entries(hourlyData).map(([hourStr, shopCounts]) => {
-    const hour = parseInt(hourStr)
-    const data: Record<string, number | string> = { hour: `${hour.toString().padStart(2, '0')}:00` }
-    
-    Object.entries(shopCounts).forEach(([shop, count]) => {
-      // Redondear a 1 decimal para promedios
-      data[shop] = Number(count.toFixed(1))
+    // Convert to chart format
+    const data = Object.entries(hourlyData).map(([hourStr, shopCounts]) => {
+      const hour = parseInt(hourStr)
+      const chartEntry: Record<string, number | string> = { hour: `${hour.toString().padStart(2, '0')}:00` }
+      
+      Object.entries(shopCounts).forEach(([shop, count]) => {
+        // Redondear a 1 decimal para promedios
+        chartEntry[shop] = Number(count.toFixed(1))
+      })
+      
+      return chartEntry
     })
     
-    return data
-  })
+    return { chartData: data, shops: uniqueShops }
+  }, [ordersToUse, realOrdersForHours.length, orders])
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
@@ -222,5 +226,5 @@ export function SalesByHourChart({ orders, fromDate, toDate }: SalesByHourChartP
       </ResponsiveContainer>
     </div>
   )
-}
+})
 

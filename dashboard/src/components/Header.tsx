@@ -70,14 +70,28 @@ export function Header({
                 type="date"
                 className="date-input"
                 value={fromDate}
-                onChange={(e) => onFromDateChange(e.target.value)}
+                max={toDate}
+                onChange={(e) => {
+                  const newFromDate = e.target.value
+                  if (newFromDate <= toDate) {
+                    onFromDateChange(newFromDate)
+                  }
+                }}
+                title="Fecha desde"
               />
               <span style={{ color: 'var(--text-muted)' }}>a</span>
               <input
                 type="date"
                 className="date-input"
                 value={toDate}
-                onChange={(e) => onToDateChange(e.target.value)}
+                min={fromDate}
+                onChange={(e) => {
+                  const newToDate = e.target.value
+                  if (newToDate >= fromDate) {
+                    onToDateChange(newToDate)
+                  }
+                }}
+                title="Fecha hasta"
               />
               <button className="btn" onClick={onRefresh} disabled={loading}>
                 <RefreshCw size={16} className={loading ? 'spinning' : ''} />
