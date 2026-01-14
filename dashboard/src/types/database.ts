@@ -196,6 +196,31 @@ export interface Database {
         Insert: Omit<TicketComment, 'id' | 'created_at' | 'user'>
         Update: Partial<Omit<TicketComment, 'id' | 'created_at' | 'user'>>
       }
+      purchase_invoices: {
+        Row: PurchaseInvoice
+        Insert: Omit<PurchaseInvoice, 'id' | 'created_at' | 'updated_at' | 'total' | 'user'>
+        Update: Partial<Omit<PurchaseInvoice, 'id' | 'created_at' | 'user'>>
+      }
+      inventory_products: {
+        Row: InventoryProduct
+        Insert: Omit<InventoryProduct, 'id' | 'created_at' | 'updated_at' | 'user'>
+        Update: Partial<Omit<InventoryProduct, 'id' | 'created_at' | 'user'>>
+      }
+      inventory_purchases: {
+        Row: InventoryPurchase
+        Insert: Omit<InventoryPurchase, 'id' | 'created_at' | 'updated_at' | 'user' | 'product'>
+        Update: Partial<Omit<InventoryPurchase, 'id' | 'created_at' | 'user' | 'product'>>
+      }
+      product_prices: {
+        Row: ProductPrice
+        Insert: Omit<ProductPrice, 'id' | 'created_at' | 'updated_at' | 'user' | 'product'>
+        Update: Partial<Omit<ProductPrice, 'id' | 'created_at' | 'user' | 'product'>>
+      }
+      inventory_stock_snapshots: {
+        Row: InventoryStockSnapshot
+        Insert: Omit<InventoryStockSnapshot, 'id' | 'created_at' | 'updated_at' | 'user' | 'product'>
+        Update: Partial<Omit<InventoryStockSnapshot, 'id' | 'created_at' | 'user' | 'product'>>
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -293,4 +318,97 @@ export const CLOSING_STATUS_LABELS: Record<ClosingStatus, string> = {
   approved: 'Aprobado',
   review: 'En revision',
   rejected: 'Rechazado',
+}
+
+export interface PurchaseInvoice {
+  id: number
+  user_id: string
+  invoice_number: string
+  invoice_date: string
+  supplier_name: string | null
+  supplier_cuit: string | null
+  subtotal: number
+  iva: number | null
+  internal_taxes: number | null
+  total: number
+  shop_name: string | null
+  notes: string | null
+  attachment_url: string | null
+  created_at: string
+  updated_at: string
+  user?: UserProfile
+}
+
+export type UnitOfMeasure = 'kg' | 'litros' | 'unidades' | 'cajas' | 'paquetes' | 'bolsas' | 'otro'
+
+export interface InventoryProduct {
+  id: number
+  user_id: string
+  name: string
+  unit_of_measure: string
+  category: string | null
+  description: string | null
+  shop_name: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  user?: UserProfile
+}
+
+export interface InventoryPurchase {
+  id: number
+  user_id: string
+  product_id: number
+  purchase_date: string
+  quantity: number
+  unit_of_measure: string
+  unit_price: number | null
+  total_amount: number | null
+  shop_name: string
+  supplier_name: string | null
+  invoice_number: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  user?: UserProfile
+  product?: InventoryProduct
+}
+
+export interface ProductPrice {
+  id: number
+  product_id: number
+  user_id: string
+  price: number
+  effective_date: string
+  is_current: boolean
+  created_at: string
+  updated_at: string
+  user?: UserProfile
+  product?: InventoryProduct
+}
+
+export interface InventoryStockSnapshot {
+  id: number
+  user_id: string
+  product_id: number
+  snapshot_date: string
+  quantity: number
+  unit_of_measure: string
+  shop_name: string
+  notes: string | null
+  is_initial_stock: boolean
+  created_at: string
+  updated_at: string
+  user?: UserProfile
+  product?: InventoryProduct
+}
+
+export const UNIT_OF_MEASURE_LABELS: Record<UnitOfMeasure, string> = {
+  kg: 'Kilogramos (kg)',
+  litros: 'Litros (L)',
+  unidades: 'Unidades',
+  cajas: 'Cajas',
+  paquetes: 'Paquetes',
+  bolsas: 'Bolsas',
+  otro: 'Otro'
 }

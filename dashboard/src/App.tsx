@@ -11,12 +11,12 @@ import { TopProductsTable } from './components/TopProductsTable'
 import { SyncStatus } from './components/SyncStatus'
 import { LoginPage } from './components/LoginPage'
 import { EmployeePortal } from './components/employee'
-import { AdminCashClosingsPanel, AdminTicketsPanel } from './components/admin'
+import { AdminCashClosingsPanel, AdminTicketsPanel, AdminPurchaseInvoicesPanel, AdminInventoryPanel } from './components/admin'
 import { useSalesData } from './hooks/useSalesData'
 import { useAuth } from './hooks/useAuth'
 import { useUserRole } from './hooks/useUserRole'
 
-type AdminView = 'dashboard' | 'closings' | 'tickets'
+type AdminView = 'dashboard' | 'closings' | 'tickets' | 'invoices' | 'inventory'
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('es-AR', {
@@ -111,6 +111,10 @@ function App() {
         )
       case 'tickets':
         return <AdminTicketsPanel />
+      case 'invoices':
+        return <AdminPurchaseInvoicesPanel />
+      case 'inventory':
+        return <AdminInventoryPanel />
       default:
         return (
           <>

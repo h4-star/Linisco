@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { 
-  User, DollarSign, Wrench, Calendar, 
+  User, DollarSign, Wrench, Calendar, FileText, Package,
   LogOut, Menu, X, ChevronRight, Home
 } from 'lucide-react'
 import type { User as AuthUser } from '@supabase/supabase-js'
@@ -8,8 +8,10 @@ import type { UserProfile } from '../../types/database'
 import { ProfileSection } from './ProfileSection'
 import { CashClosingSection } from './CashClosingSection'
 import { TicketsSection } from './TicketsSection'
+import { PurchaseInvoiceSection } from './PurchaseInvoiceSection'
+import { InventorySection } from './InventorySection'
 
-type Section = 'home' | 'profile' | 'cash' | 'tickets'
+type Section = 'home' | 'profile' | 'cash' | 'tickets' | 'invoices' | 'inventory'
 
 interface EmployeePortalProps {
   user: AuthUser
@@ -23,6 +25,8 @@ const NAV_ITEMS: { id: Section; label: string; icon: typeof User; description: s
   { id: 'profile', label: 'Mi Perfil', icon: User, description: 'Datos personales' },
   { id: 'cash', label: 'Cierre de Caja', icon: DollarSign, description: 'Reportar cierres' },
   { id: 'tickets', label: 'Solicitudes', icon: Wrench, description: 'Arreglos, vacaciones, francos' },
+  { id: 'invoices', label: 'Facturas de Compra', icon: FileText, description: 'Cargar facturas de compra' },
+  { id: 'inventory', label: 'Inventario', icon: Package, description: 'Productos y compras' },
 ]
 
 export function EmployeePortal({ user, profile, onSignOut, onProfileUpdate }: EmployeePortalProps) {
@@ -39,6 +43,10 @@ export function EmployeePortal({ user, profile, onSignOut, onProfileUpdate }: Em
         return <CashClosingSection userId={user.id} assignedShops={profile?.assigned_shops || []} />
       case 'tickets':
         return <TicketsSection userId={user.id} assignedShops={profile?.assigned_shops || []} />
+      case 'invoices':
+        return <PurchaseInvoiceSection userId={user.id} assignedShops={profile?.assigned_shops || []} />
+      case 'inventory':
+        return <InventorySection userId={user.id} assignedShops={profile?.assigned_shops || []} />
       default:
         return <HomeSection userName={displayName} onNavigate={setActiveSection} />
     }
@@ -144,6 +152,20 @@ function HomeSection({ userName, onNavigate }: { userName: string; onNavigate: (
       description: 'Vacaciones, francos, arreglos',
       icon: Calendar,
       color: '#f59e0b'
+    },
+    { 
+      id: 'invoices' as Section, 
+      title: 'Facturas de Compra', 
+      description: 'Cargar facturas de compra',
+      icon: FileText,
+      color: '#3b82f6'
+    },
+    { 
+      id: 'inventory' as Section, 
+      title: 'Inventario', 
+      description: 'Productos y compras',
+      icon: Package,
+      color: '#10b981'
     },
     { 
       id: 'profile' as Section, 

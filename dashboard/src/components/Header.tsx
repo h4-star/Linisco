@@ -1,7 +1,7 @@
-import { Store, RefreshCw, AlertCircle, LogOut, User, DollarSign, Wrench } from 'lucide-react'
+import { Store, RefreshCw, AlertCircle, LogOut, User, DollarSign, Wrench, FileText, Package } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-type AdminView = 'dashboard' | 'closings' | 'tickets'
+type AdminView = 'dashboard' | 'closings' | 'tickets' | 'invoices' | 'inventory'
 
 interface HeaderProps {
   fromDate: string
@@ -126,6 +126,22 @@ export function Header({
               >
                 <Wrench size={16} />
                 Solicitudes
+              </button>
+              <button 
+                className={`btn ${adminView === 'invoices' ? 'btn-active' : 'btn-secondary'}`}
+                onClick={() => onChangeView('invoices')}
+                title="Facturas de compra"
+              >
+                <FileText size={16} />
+                Facturas
+              </button>
+              <button 
+                className={`btn ${adminView === 'inventory' ? 'btn-active' : 'btn-secondary'}`}
+                onClick={() => onChangeView('inventory')}
+                title="Inventario"
+              >
+                <Package size={16} />
+                Inventario
               </button>
             </div>
           )}
