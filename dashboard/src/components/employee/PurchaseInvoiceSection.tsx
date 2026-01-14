@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { 
-  FileText, Save, Loader2, CheckCircle, AlertTriangle,
+  FileText, Save, Loader2,
   ChevronDown, ChevronUp, X
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'

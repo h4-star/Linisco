@@ -183,7 +183,7 @@ export function AdminPurchaseInvoicesPanel() {
 
       const { error } = await supabase
         .from('purchase_invoices')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id)
 
       if (error) throw error

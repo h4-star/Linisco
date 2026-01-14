@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Package, Save, Loader2, Plus, X,
-  ChevronDown, ChevronUp, ShoppingCart, TrendingUp, ClipboardList
+  ChevronDown, ChevronUp, ShoppingCart, ClipboardList
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { InventoryProduct, InventoryPurchase, InventoryStockSnapshot, UnitOfMeasure } from '../../types/database'
 import { SHOP_LIST, UNIT_OF_MEASURE_LABELS } from '../../types/database'
-import { format, subDays, startOfWeek, endOfWeek } from 'date-fns'
+import { format, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 interface InventorySectionProps {
@@ -338,8 +338,8 @@ export function InventorySection({ userId, assignedShops }: InventorySectionProp
         .limit(1)
         .single()
 
-      const initialStockQty = initialStock?.quantity || 0
-      const initialStockDate = initialStock?.snapshot_date || null
+      const initialStockQty = (initialStock as any)?.quantity || 0
+      const initialStockDate = (initialStock as any)?.snapshot_date || null
 
       // Obtener compras del período
       const startDate = initialStockDate 
@@ -353,7 +353,7 @@ export function InventorySection({ userId, assignedShops }: InventorySectionProp
         .eq('shop_name', shopName)
         .gte('purchase_date', startDate)
 
-      const totalPurchases = periodPurchases?.reduce((sum, p) => sum + p.quantity, 0) || 0
+      const totalPurchases = periodPurchases?.reduce((sum: number, p: any) => sum + (p.quantity || 0), 0) || 0
       const daysInPeriod = initialStockDate 
         ? Math.max(1, Math.floor((new Date().getTime() - new Date(initialStockDate).getTime()) / (1000 * 60 * 60 * 24)))
         : days

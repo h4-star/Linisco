@@ -142,7 +142,16 @@ export function AdminInventoryPanel() {
           const monthlyConsumption = monthlyPurchases?.reduce((sum, p) => sum + p.quantity, 0) || 0
 
           return {
-            ...product,
+            id: product.id,
+            user_id: product.user_id,
+            name: product.name,
+            unit_of_measure: product.unit_of_measure,
+            category: product.category,
+            description: product.description,
+            shop_name: product.shop_name,
+            is_active: product.is_active,
+            created_at: product.created_at,
+            updated_at: product.updated_at,
             current_price: priceData || null,
             total_stock: calculatedStock,
             total_value: totalValue,
@@ -152,7 +161,7 @@ export function AdminInventoryPanel() {
             initial_stock_date: initialStockDate,
             calculated_stock: calculatedStock,
             daily_utilization: dailyUtilization,
-          }
+          } as ProductWithPrice
         })
       )
 
@@ -202,7 +211,7 @@ export function AdminInventoryPanel() {
       // Primero, marcar todos los precios anteriores como no actuales
       await supabase
         .from('product_prices')
-        .update({ is_current: false })
+        .update({ is_current: false } as any)
         .eq('product_id', productId)
 
       // Crear nuevo precio
@@ -308,7 +317,7 @@ export function AdminInventoryPanel() {
           >
             <option value="">Todas las categorías</option>
             {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat || ''} value={cat || ''}>{cat || ''}</option>
             ))}
           </select>
         </div>
