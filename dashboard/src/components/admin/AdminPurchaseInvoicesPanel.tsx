@@ -169,7 +169,7 @@ export function AdminPurchaseInvoicesPanel() {
   const handleSaveEdit = async (id: number) => {
     setUpdating(id)
     try {
-      const updateData: any = {
+      const updateData = {
         invoice_number: editForm.invoice_number.trim(),
         invoice_date: editForm.invoice_date,
         supplier_name: editForm.supplier_name.trim() || null,
@@ -181,9 +181,8 @@ export function AdminPurchaseInvoicesPanel() {
         notes: editForm.notes.trim() || null,
       }
 
-      const { error } = await supabase
-        .from('purchase_invoices')
-        .update(updateData as any)
+      const { error } = await (supabase.from('purchase_invoices') as any)
+        .update(updateData)
         .eq('id', id)
 
       if (error) throw error

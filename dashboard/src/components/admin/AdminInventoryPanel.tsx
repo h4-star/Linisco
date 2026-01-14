@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { 
   Package, Loader2, ChevronDown, ChevronUp,
-  Filter, RefreshCw, Edit3, Save, X, Plus, DollarSign, TrendingUp
+  Filter, RefreshCw, Save, DollarSign
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { InventoryProduct, InventoryPurchase, ProductPrice, UnitOfMeasure } from '../../types/database'
+import type { InventoryProduct, ProductPrice, UnitOfMeasure } from '../../types/database'
 import { SHOP_LIST, UNIT_OF_MEASURE_LABELS } from '../../types/database'
 import { format, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -23,13 +23,10 @@ interface ProductWithPrice extends InventoryProduct {
 
 export function AdminInventoryPanel() {
   const [products, setProducts] = useState<ProductWithPrice[]>([])
-  const [purchases, setPurchases] = useState<InventoryPurchase[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [filterShop, setFilterShop] = useState<string>('')
   const [filterCategory, setFilterCategory] = useState<string>('')
-  const [updating, setUpdating] = useState<number | null>(null)
-  const [editingPriceId, setEditingPriceId] = useState<number | null>(null)
   const [showPriceForm, setShowPriceForm] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -45,7 +42,7 @@ export function AdminInventoryPanel() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      await Promise.all([fetchProducts(), fetchPurchases()])
+      await fetchProducts()
     } finally {
       setLoading(false)
     }
@@ -69,8 +66,8 @@ export function AdminInventoryPanel() {
       if (error) throw error
 
       // Obtener precios actuales para cada producto
-      const productsWithPrices = await Promise.all(
-        (data || []).map(async (product) => {
+      const productsWithPrices: ProductWithPrice[] = await Promise.all(
+        ((data || []) as InventoryProduct[]).map(async (product: InventoryProduct) => {
           // Obtener precio actual
           const { data: priceData } = await supabase
             .from('product_prices')
@@ -90,8 +87,8 @@ export function AdminInventoryPanel() {
             .limit(1)
             .single()
 
-          const initialStock = initialStockData?.quantity || 0
-          const initialStockDate = initialStockData?.snapshot_date || null
+          const initialStock = (initialStockData as any)?.quantity || 0
+          const initialStockDate = (initialStockData as any)?.snapshot_date || null
 
           // Calcular stock total (suma de compras)
           const { data: purchasesData } = await supabase
@@ -100,9 +97,9 @@ export function AdminInventoryPanel() {
             .eq('product_id', product.id)
             .eq('shop_name', product.shop_name)
 
-          const totalPurchases = purchasesData?.reduce((sum, p) => sum + p.quantity, 0) || 0
+          const totalPurchases = purchasesData?.reduce((sum: number, p: any) => sum + (p.quantity || 0), 0) || 0
           const calculatedStock = initialStock + totalPurchases
-          const totalValue = priceData ? calculatedStock * priceData.price : 0
+          const totalValue = priceData ? calculatedStock * ((priceData as any)?.price || 0) : 0
 
           // Calcular utilización diaria promedio (últimos 30 días)
           const utilizationStartDate = initialStockDate 
@@ -116,7 +113,7 @@ export function AdminInventoryPanel() {
             .eq('shop_name', product.shop_name)
             .gte('purchase_date', utilizationStartDate)
 
-          const periodPurchasesTotal = periodPurchases?.reduce((sum, p) => sum + p.quantity, 0) || 0
+          const periodPurchasesTotal = periodPurchases?.reduce((sum: number, p: any) => sum + (p.quantity || 0), 0) || 0
           const daysInPeriod = initialStockDate 
             ? Math.max(1, Math.floor((new Date().getTime() - new Date(initialStockDate).getTime()) / (1000 * 60 * 60 * 24)))
             : 30
@@ -138,8 +135,8 @@ export function AdminInventoryPanel() {
             .eq('product_id', product.id)
             .gte('purchase_date', format(monthlyStart, 'yyyy-MM-dd'))
 
-          const weeklyConsumption = weeklyPurchases?.reduce((sum, p) => sum + p.quantity, 0) || 0
-          const monthlyConsumption = monthlyPurchases?.reduce((sum, p) => sum + p.quantity, 0) || 0
+          const weeklyConsumption = weeklyPurchases?.reduce((sum: number, p: any) => sum + (p.quantity || 0), 0) || 0
+          const monthlyConsumption = monthlyPurchases?.reduce((sum: number, p: any) => sum + (p.quantity || 0), 0) || 0
 
           return {
             id: product.id,
@@ -171,29 +168,6 @@ export function AdminInventoryPanel() {
     }
   }
 
-  const fetchPurchases = async () => {
-    try {
-      let query = supabase
-        .from('inventory_purchases')
-        .select(`
-          *,
-          product:inventory_products(*)
-        `)
-        .order('purchase_date', { ascending: false })
-        .limit(500)
-
-      if (filterShop) {
-        query = query.eq('shop_name', filterShop)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      setPurchases(data || [])
-    } catch (err) {
-      console.error('Error fetching purchases:', err)
-    }
-  }
 
   const handleAddPrice = async (productId: number) => {
     if (!priceValue || parseFloat(priceValue) <= 0) {
@@ -209,21 +183,22 @@ export function AdminInventoryPanel() {
       if (!user) throw new Error('Usuario no autenticado')
 
       // Primero, marcar todos los precios anteriores como no actuales
-      await supabase
-        .from('product_prices')
-        .update({ is_current: false } as any)
+      const updatePayload = { is_current: false }
+      await (supabase.from('product_prices') as any)
+        .update(updatePayload)
         .eq('product_id', productId)
 
       // Crear nuevo precio
-      const { error: insertError } = await supabase
-        .from('product_prices')
-        .insert({
-          product_id: productId,
-          user_id: user.id,
-          price: parseFloat(priceValue),
-          effective_date: priceDate,
-          is_current: true,
-        } as any)
+      const insertPayload = {
+        product_id: productId,
+        user_id: user.id,
+        price: parseFloat(priceValue),
+        effective_date: priceDate,
+        is_current: true,
+      }
+      
+      const { error: insertError } = await (supabase.from('product_prices') as any)
+        .insert(insertPayload)
 
       if (insertError) throw insertError
 
